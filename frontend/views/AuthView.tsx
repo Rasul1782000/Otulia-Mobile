@@ -62,133 +62,139 @@ export function AuthView({ onViewChange }: { onViewChange: (v: ViewState) => voi
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <View style={tw`flex-1 bg-white`}>
-      {/* Background Image */}
-      <View style={tw`absolute top-0 left-0 right-0 h-[40%] bg-zinc-50`}>
+    <KeyboardAvoidingView
+      style={tw`flex-1`}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      {/* Full-screen background */}
+      <View style={[StyleSheet.absoluteFill]}>
         <Image
           source={{ uri: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800' }}
-          style={tw`w-full h-full opacity-60`}
+          style={tw`w-full h-full`}
+          resizeMode="cover"
         />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.55)' }]} />
       </View>
 
-      <ScrollView style={tw`flex-1`} contentContainerStyle={tw`pt-12 pb-10`}>
-        {/* Logo */}
-        <View style={tw`items-center px-5 mt-4`}>
-          <Image 
-            source={require('../images/assets/Otulia logo.jpeg')} 
-            style={tw`w-20 h-20 mb-2`}
-            resizeMode="contain"
-          />
-          <Text style={[tw`text-2xl font-extrabold`, { letterSpacing: 8, color: '#18181b' }]}>OTULIA</Text>
-          <Text style={[tw`text-[7px] font-extrabold mt-1`, { letterSpacing: 3, color: '#18181b' }]}>ALL IN ONE LUXURY MARKETPLACE</Text>
-        </View>
-
-        <View style={tw`h-10`} />
-
+      {/* Centered scroll content */}
+      <ScrollView
+        style={tw`flex-1`}
+        contentContainerStyle={tw`flex-grow justify-center px-5 py-8`}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Card */}
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={tw`px-4`}>
-          <View style={[tw`bg-white rounded-[36px] p-6 shadow-2xl`, { elevation: 20 }]}>
-            {/* Tabs */}
-            <View style={tw`flex-row mb-6 relative`}>
-              <TouchableOpacity style={tw`flex-1 pb-3 items-center`} onPress={() => setActiveTab('signin')}>
-                <Text style={[tw`text-sm font-extrabold`, activeTab === 'signin' ? { color: '#18181b' } : { color: '#a1a1aa' }]}>Sign In</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={tw`flex-1 pb-3 items-center`} onPress={() => setActiveTab('signup')}>
-                <Text style={[tw`text-sm font-extrabold`, activeTab === 'signup' ? { color: '#18181b' } : { color: '#a1a1aa' }]}>Sign Up</Text>
-              </TouchableOpacity>
-              <View style={[tw`absolute bottom-0 left-0 right-0 h-[1px]`, { backgroundColor: '#f4f4f5' }]} />
-              <View style={[tw`absolute bottom-0 w-1/2 h-[2px]`, { backgroundColor: colors.gold }, activeTab === 'signup' ? { left: '50%' } : { left: 0 }]} />
-            </View>
+        <View style={[tw`bg-white rounded-3xl shadow-2xl`, { elevation: 24, padding: 20 }]}>
 
-            {activeTab === 'signup' && (
-              <>
-                {/* Full Name */}
-                <Text style={tw`text-[11px] font-extrabold text-zinc-900 mb-2`}>Full Name</Text>
-                <View style={tw`flex-row items-center border border-zinc-100 rounded-xl px-3 py-3 gap-2 bg-zinc-50 mb-4`}>
-                  <UserIcon size={16} color="#a1a1aa" />
-                  <TextInput
-                    placeholder="Enter your full name"
-                    placeholderTextColor="#a1a1aa"
-                    style={tw`flex-1 text-xs text-zinc-900 font-extrabold`}
-                    autoCapitalize="words"
-                  />
-                </View>
-              </>
-            )}
-
-            {/* Email */}
-            <Text style={tw`text-[11px] font-extrabold text-zinc-900 mb-2`}>Email Address</Text>
-            <View style={tw`flex-row items-center border border-zinc-100 rounded-xl px-3 py-3 gap-2 bg-zinc-50`}>
-              <MailIcon />
-              <TextInput
-                placeholder="Enter your email"
-                placeholderTextColor="#a1a1aa"
-                style={tw`flex-1 text-xs text-zinc-900 font-extrabold`}
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            {/* Password */}
-            <Text style={tw`text-[11px] font-extrabold text-zinc-900 mb-2 mt-4`}>Password</Text>
-            <View style={tw`flex-row items-center border border-zinc-100 rounded-xl px-3 py-3 gap-2 bg-zinc-50`}>
-              <LockIcon />
-              <TextInput
-                placeholder="Enter your password"
-                placeholderTextColor="#a1a1aa"
-                style={tw`flex-1 text-xs text-zinc-900 font-extrabold`}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-                {showPassword ? <Eye size={16} color="#a1a1aa" /> : <EyeOff size={16} color="#a1a1aa" />}
-              </TouchableOpacity>
-            </View>
-
-            {activeTab === 'signin' && (
-              <TouchableOpacity style={tw`self-end mt-3`}>
-                <Text style={tw`text-[10px] font-extrabold text-zinc-900 underline`}>Forgot Password?</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Submit */}
-            <TouchableOpacity 
-              style={[tw`rounded-xl py-4 items-center mt-6 shadow-lg`, { backgroundColor: '#111113' }]} 
-              onPress={() => onViewChange('home')}
-            >
-              <Text style={tw`text-white text-sm font-extrabold`}>{activeTab === 'signin' ? 'Sign In' : 'Create Account'}</Text>
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={tw`flex-row items-center my-6`}>
-              <View style={tw`flex-1 h-[1px] bg-zinc-100`} />
-              <Text style={tw`text-[10px] text-zinc-500 px-3 font-extrabold`}>or continue with</Text>
-              <View style={tw`flex-1 h-[1px] bg-zinc-100`} />
-            </View>
-
-            {/* Social */}
-            <View style={tw`flex-row justify-center gap-4`}>
-              <TouchableOpacity style={tw`w-14 h-14 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`}>
-                <GoogleIcon />
-              </TouchableOpacity>
-              <TouchableOpacity style={tw`w-14 h-14 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`}>
-                <AppleIcon />
-              </TouchableOpacity>
-              <TouchableOpacity style={tw`w-14 h-14 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`}>
-                <FacebookIcon />
-              </TouchableOpacity>
-            </View>
-
-            {activeTab === 'signup' && (
-              <Text style={tw`text-[9px] text-zinc-400 text-center mt-6 font-extrabold px-4`}>
-                By creating an account, you agree to our{' '}
-                <Text style={tw`text-zinc-600 underline`}>Terms of Service</Text> and{' '}
-                <Text style={tw`text-zinc-600 underline`}>Privacy Policy</Text>.
-              </Text>
-            )}
+          {/* Logo inside card */}
+          <View style={tw`items-center mb-4`}>
+            <Image
+              source={require('../images/assets/Otulia logo.jpeg')}
+              style={tw`w-14 h-14 mb-1`}
+              resizeMode="contain"
+            />
+            <Text style={[tw`text-xl font-black`, { letterSpacing: 7, color: '#000000' }]}>OTULIA</Text>
+            <Text style={[tw`text-[8px] font-black mt-0.5`, { letterSpacing: 2.5, color: '#000000', fontWeight: '900' }]}>ALL IN ONE LUXURY MARKETPLACE</Text>
           </View>
-        </KeyboardAvoidingView>
+
+          {/* Tabs */}
+          <View style={tw`flex-row mb-4 relative`}>
+            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => setActiveTab('signin')}>
+              <Text style={[tw`text-sm font-black`, activeTab === 'signin' ? { color: '#18181b' } : { color: '#a1a1aa' }]}>Sign In</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => setActiveTab('signup')}>
+              <Text style={[tw`text-sm font-black`, activeTab === 'signup' ? { color: '#18181b' } : { color: '#a1a1aa' }]}>Sign Up</Text>
+            </TouchableOpacity>
+            <View style={[tw`absolute bottom-0 left-0 right-0 h-[1px]`, { backgroundColor: '#f4f4f5' }]} />
+            <View style={[tw`absolute bottom-0 w-1/2 h-[2px]`, { backgroundColor: colors.gold }, activeTab === 'signup' ? { left: '50%' } : { left: 0 }]} />
+          </View>
+
+          {activeTab === 'signup' && (
+            <>
+              <Text style={tw`text-[10px] font-black text-zinc-900 mb-1.5`}>Full Name</Text>
+              <View style={tw`flex-row items-center border border-zinc-100 rounded-xl px-3 py-2.5 gap-2 bg-zinc-50 mb-3`}>
+                <UserIcon size={14} color="#a1a1aa" />
+                <TextInput
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#a1a1aa"
+                  style={tw`flex-1 text-xs text-zinc-900 font-black`}
+                  autoCapitalize="words"
+                />
+              </View>
+            </>
+          )}
+
+          {/* Email */}
+          <Text style={tw`text-[10px] font-black text-zinc-900 mb-1.5`}>Email Address</Text>
+          <View style={tw`flex-row items-center border border-zinc-100 rounded-xl px-3 py-2.5 gap-2 bg-zinc-50`}>
+            <MailIcon size={14} />
+            <TextInput
+              placeholder="Enter your email"
+              placeholderTextColor="#a1a1aa"
+              style={tw`flex-1 text-xs text-zinc-900 font-black`}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+
+          {/* Password */}
+          <Text style={tw`text-[10px] font-black text-zinc-900 mb-1.5 mt-3`}>Password</Text>
+          <View style={tw`flex-row items-center border border-zinc-100 rounded-xl px-3 py-2.5 gap-2 bg-zinc-50`}>
+            <LockIcon size={14} />
+            <TextInput
+              placeholder="Enter your password"
+              placeholderTextColor="#a1a1aa"
+              style={tw`flex-1 text-xs text-zinc-900 font-black`}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+              {showPassword ? <Eye size={14} color="#a1a1aa" /> : <EyeOff size={14} color="#a1a1aa" />}
+            </TouchableOpacity>
+          </View>
+
+          {activeTab === 'signin' && (
+            <TouchableOpacity style={tw`self-end mt-2`}>
+              <Text style={tw`text-[10px] font-black text-zinc-900 underline`}>Forgot Password?</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Submit */}
+          <TouchableOpacity
+            style={[tw`rounded-xl py-3 items-center mt-4 shadow-md`, { backgroundColor: '#111113' }]}
+            onPress={() => onViewChange('home')}
+          >
+            <Text style={tw`text-white text-sm font-black`}>{activeTab === 'signin' ? 'Sign In' : 'Create Account'}</Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={tw`flex-row items-center my-4`}>
+            <View style={tw`flex-1 h-[1px] bg-zinc-100`} />
+            <Text style={tw`text-[9px] text-zinc-400 px-3 font-black`}>or continue with</Text>
+            <View style={tw`flex-1 h-[1px] bg-zinc-100`} />
+          </View>
+
+          {/* Social */}
+          <View style={tw`flex-row justify-center gap-3`}>
+            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`}>
+              <GoogleIcon size={16} />
+            </TouchableOpacity>
+            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`}>
+              <AppleIcon size={17} />
+            </TouchableOpacity>
+            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`}>
+              <FacebookIcon size={17} />
+            </TouchableOpacity>
+          </View>
+
+          {activeTab === 'signup' && (
+            <Text style={tw`text-[8px] text-zinc-400 text-center mt-4 font-black px-4`}>
+              By creating an account, you agree to our{' '}
+              <Text style={tw`text-zinc-600 underline`}>Terms of Service</Text> and{' '}
+              <Text style={tw`text-zinc-600 underline`}>Privacy Policy</Text>.
+            </Text>
+          )}
+        </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
