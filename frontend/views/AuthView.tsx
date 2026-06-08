@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Dimensions, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { EyeOff, Eye, User as UserIcon } from 'lucide-react-native';
 import { ViewState } from '../types';
 import { useTheme, colors } from '../theme';
-import Svg, { Rect, Path, Circle } from 'react-native-svg';
+import Svg, { Rect, Path } from 'react-native-svg';
 import tw from 'twrnc';
+import { login, register } from '../lib/api';
 
 const { width } = Dimensions.get('window');
 
@@ -56,10 +57,104 @@ function GoogleIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-export function AuthView({ onViewChange }: { onViewChange: (v: ViewState) => void }) {
+interface AuthViewProps {
+  onViewChange: (v: ViewState) => void;
+  onLoginSuccess?: (user: any) => void;
+}
+
+export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
   const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
+
+  // Form states
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+
+  const handleSubmit = async () => {
+    setMessage(null);
+    if (activeTab === 'signup' && !fullName.trim()) {
+      setMessage({ type: 'error', text: 'Full name is required.' });
+      return;
+    }
+    if (!email.trim() || !password.trim()) {
+      setMessage({ type: 'error', text: 'Email and password are required.' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (activeTab === 'signin') {
+        const response = await login({ email: email.trim(), password: password.trim() });
+        if (response.success) {
+          setMessage({ type: 'success', text: response.message || 'Signed in successfully.' });
+          
+          if (onLoginSuccess) {
+            onLoginSuccess({
+              id: String(response.user.id),
+              name: response.user.full_name,
+              email: response.user.email,
+              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256',
+              isVerified: true,
+              type: 'buyer',
+            });
+          }
+          
+          setTimeout(() => {
+            onViewChange('home');
+          }, 600);
+        } else {
+          setMessage({ type: 'error', text: response.message || 'Login failed.' });
+        }
+      } else {
+        const response = await register({
+          full_name: fullName.trim(),
+          email: email.trim(),
+          password: password.trim(),
+        });
+        
+        if (response.success) {
+          setMessage({ type: 'success', text: 'Account created! Logging you in...' });
+          
+          // Auto log in
+          setTimeout(async () => {
+            try {
+              const loginResp = await login({ email: email.trim(), password: password.trim() });
+              if (loginResp.success) {
+                if (onLoginSuccess) {
+                  onLoginSuccess({
+                    id: String(loginResp.user.id),
+                    name: loginResp.user.full_name,
+                    email: loginResp.user.email,
+                    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256',
+                    isVerified: true,
+                    type: 'buyer',
+                  });
+                }
+                onViewChange('home');
+              } else {
+                setActiveTab('signin');
+                setMessage({ type: 'success', text: 'Account created. Please sign in.' });
+              }
+            } catch (err) {
+              setActiveTab('signin');
+              setMessage({ type: 'success', text: 'Account created. Please sign in.' });
+            }
+          }, 800);
+        } else {
+          setMessage({ type: 'error', text: response.message || 'Registration failed.' });
+        }
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: 'error', text: err.message || 'An error occurred. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -97,12 +192,33 @@ export function AuthView({ onViewChange }: { onViewChange: (v: ViewState) => voi
             <Text style={[tw`text-[8px] font-black mt-0.5`, { letterSpacing: 2.5, color: '#000000', fontWeight: '900' }]}>ALL IN ONE LUXURY MARKETPLACE</Text>
           </View>
 
+          {/* Message Banner */}
+          {message && (
+            <View style={[
+              tw`p-3 rounded-xl mb-4 border flex-row items-center gap-2`,
+              message.type === 'error' 
+                ? { backgroundColor: '#fef2f2', borderColor: '#fee2e2' }
+                : { backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }
+            ]}>
+              <View style={[
+                tw`w-2 h-2 rounded-full`, 
+                message.type === 'error' ? { backgroundColor: '#ef4444' } : { backgroundColor: '#22c55e' }
+              ]} />
+              <Text style={[
+                tw`text-[10px] font-black flex-1`, 
+                message.type === 'error' ? { color: '#991b1b' } : { color: '#166534' }
+              ]}>
+                {message.text}
+              </Text>
+            </View>
+          )}
+
           {/* Tabs */}
           <View style={tw`flex-row mb-4 relative`}>
-            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => setActiveTab('signin')}>
+            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => { setActiveTab('signin'); setMessage(null); }}>
               <Text style={[tw`text-sm font-black`, activeTab === 'signin' ? { color: '#18181b' } : { color: '#a1a1aa' }]}>Sign In</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => setActiveTab('signup')}>
+            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => { setActiveTab('signup'); setMessage(null); }}>
               <Text style={[tw`text-sm font-black`, activeTab === 'signup' ? { color: '#18181b' } : { color: '#a1a1aa' }]}>Sign Up</Text>
             </TouchableOpacity>
             <View style={[tw`absolute bottom-0 left-0 right-0 h-[1px]`, { backgroundColor: '#f4f4f5' }]} />
@@ -117,6 +233,8 @@ export function AuthView({ onViewChange }: { onViewChange: (v: ViewState) => voi
                 <TextInput
                   placeholder="Enter your full name"
                   placeholderTextColor="#a1a1aa"
+                  value={fullName}
+                  onChangeText={setFullName}
                   style={tw`flex-1 text-xs text-zinc-900 font-black`}
                   autoCapitalize="words"
                 />
@@ -131,6 +249,8 @@ export function AuthView({ onViewChange }: { onViewChange: (v: ViewState) => voi
             <TextInput
               placeholder="Enter your email"
               placeholderTextColor="#a1a1aa"
+              value={email}
+              onChangeText={setEmail}
               style={tw`flex-1 text-xs text-zinc-900 font-black`}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -144,6 +264,8 @@ export function AuthView({ onViewChange }: { onViewChange: (v: ViewState) => voi
             <TextInput
               placeholder="Enter your password"
               placeholderTextColor="#a1a1aa"
+              value={password}
+              onChangeText={setPassword}
               style={tw`flex-1 text-xs text-zinc-900 font-black`}
               secureTextEntry={!showPassword}
             />
@@ -160,10 +282,14 @@ export function AuthView({ onViewChange }: { onViewChange: (v: ViewState) => voi
 
           {/* Submit */}
           <TouchableOpacity
-            style={[tw`rounded-xl py-3 items-center mt-4 shadow-md`, { backgroundColor: '#111113' }]}
-            onPress={() => onViewChange('home')}
+            style={[tw`rounded-xl py-3 items-center mt-4 shadow-md flex-row justify-center gap-2`, { backgroundColor: '#111113' }]}
+            onPress={handleSubmit}
+            disabled={loading}
           >
-            <Text style={tw`text-white text-sm font-black`}>{activeTab === 'signin' ? 'Sign In' : 'Create Account'}</Text>
+            {loading && <ActivityIndicator size="small" color="#ffffff" />}
+            <Text style={tw`text-white text-sm font-black`}>
+              {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
+            </Text>
           </TouchableOpacity>
 
           {/* Divider */}
@@ -198,3 +324,4 @@ export function AuthView({ onViewChange }: { onViewChange: (v: ViewState) => voi
     </KeyboardAvoidingView>
   );
 }
+

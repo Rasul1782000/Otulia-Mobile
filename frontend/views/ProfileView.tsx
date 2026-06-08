@@ -1,13 +1,59 @@
-import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Settings, Edit2, Heart, Bell, Eye, Calendar, FileText, Search, Shield, User as UserIcon, HelpCircle, LogOut, ChevronRight, CheckCircle2, Home, DollarSign, Bed, MessageCircle } from 'lucide-react-native';
-import { currentUser } from '../data';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { Settings, Edit2, Heart, Calendar, Search, Shield, User as UserIcon, LogOut, ChevronRight, CheckCircle2, DollarSign, MessageCircle, Users } from 'lucide-react-native';
 import { useTheme, colors } from '../theme';
-import { ViewState } from '../types';
+import { ViewState, User } from '../types';
 import tw from 'twrnc';
+import { getUsers } from '../lib/api';
 
-export function ProfileView({ onViewChange }: { onViewChange: (v: ViewState) => void }) {
+interface ProfileViewProps {
+  onViewChange: (v: ViewState) => void;
+  currentUser: User | null;
+  setCurrentUser: (u: User | null) => void;
+}
+
+export function ProfileView({ onViewChange, currentUser, setCurrentUser }: ProfileViewProps) {
   const { isDark, toggleTheme } = useTheme();
+
+  // Falling back to a guest or default template user
+  const activeUser = currentUser || {
+    id: 'u1',
+    name: 'James Anderson',
+    email: 'james.anderson@email.com',
+    phone: '+34 612 345 678',
+    avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=256&h=256',
+    isVerified: true,
+    type: 'buyer' as const
+  };
+
+  // Database registry states
+  const [showRegistry, setShowRegistry] = useState(false);
+  const [loadingRegistry, setLoadingRegistry] = useState(false);
+  const [registeredUsers, setRegisteredUsers] = useState<Array<{ id: number; full_name: string; email: string; created_at: string }>>([]);
+  const [registryError, setRegistryError] = useState<string | null>(null);
+
+  const handleToggleRegistry = async () => {
+    if (!showRegistry) {
+      setShowRegistry(true);
+      setLoadingRegistry(true);
+      setRegistryError(null);
+      try {
+        const response = await getUsers();
+        if (response.success) {
+          setRegisteredUsers(response.users);
+        } else {
+          setRegistryError('Failed to fetch registry data.');
+        }
+      } catch (err: any) {
+        console.error(err);
+        setRegistryError(err.message || 'Error communicating with database.');
+      } finally {
+        setLoadingRegistry(false);
+      }
+    } else {
+      setShowRegistry(false);
+    }
+  };
 
   return (
     <View style={tw`flex-1 bg-white`}>
@@ -33,7 +79,7 @@ export function ProfileView({ onViewChange }: { onViewChange: (v: ViewState) => 
                 style={tw`w-28 h-28 rounded-[32px] border-4 border-white overflow-hidden shadow-xl bg-zinc-100`}
                 onPress={() => Alert.alert('Edit Avatar', 'Opening image picker...')}
               >
-                <Image source={{ uri: currentUser.avatar }} style={tw`w-full h-full`} />
+                <Image source={{ uri: activeUser.avatar }} style={tw`w-full h-full`} />
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[tw`absolute -bottom-2 -right-2 w-10 h-10 rounded-full items-center justify-center border-4 border-white shadow-md`, { backgroundColor: colors.gold }]}
@@ -44,10 +90,10 @@ export function ProfileView({ onViewChange }: { onViewChange: (v: ViewState) => 
             </View>
             <View style={tw`flex-1 pb-2`}>
               <View style={tw`flex-row items-center gap-1.5 mb-1`}>
-                <Text style={tw`text-2xl font-bold text-zinc-900`}>{currentUser.name}</Text>
-                <CheckCircle2 size={16} color={colors.gold} />
+                <Text style={tw`text-2xl font-bold text-zinc-900`}>{activeUser.name}</Text>
+                {activeUser.isVerified && <CheckCircle2 size={16} color={colors.gold} />}
               </View>
-              <Text style={tw`text-sm font-bold text-zinc-400 mb-2`}>{currentUser.email}</Text>
+              <Text style={tw`text-sm font-bold text-zinc-400 mb-2`}>{activeUser.email}</Text>
               <View style={[tw`self-start px-3 py-1 rounded-lg border`, { backgroundColor: 'rgba(193,155,108,0.05)', borderColor: 'rgba(193,155,108,0.1)' }]}>
                 <Text style={[tw`text-[10px] font-bold uppercase tracking-widest`, { color: colors.gold }]}>Platinum Member</Text>
               </View>
@@ -102,6 +148,62 @@ export function ProfileView({ onViewChange }: { onViewChange: (v: ViewState) => 
               </View>
             </View>
 
+            {/* Otulia Member Registry */}
+            <View>
+              <Text style={tw`text-[11px] font-bold text-zinc-400 uppercase tracking-[3px] mb-4`}>Otulia Member Registry</Text>
+              <View style={tw`border border-zinc-100 rounded-2xl bg-zinc-50 overflow-hidden`}>
+                <TouchableOpacity 
+                  style={tw`flex-row items-center justify-between p-4 bg-white`}
+                  onPress={handleToggleRegistry}
+                >
+                  <View style={tw`flex-row items-center gap-4`}>
+                    <View style={[tw`w-10 h-10 rounded-xl items-center justify-center bg-zinc-50`]}>
+                      <Users size={18} color={colors.gold} />
+                    </View>
+                    <View>
+                      <Text style={tw`text-[15px] font-bold text-zinc-900`}>Global Registry</Text>
+                      <Text style={tw`text-xs text-zinc-400 font-bold`}>View active database users</Text>
+                    </View>
+                  </View>
+                  <ChevronRight size={16} color="#d4d4d8" style={{ transform: [{ rotate: showRegistry ? '90deg' : '0deg' }] }} />
+                </TouchableOpacity>
+
+                {showRegistry && (
+                  <View style={tw`p-4 border-t border-zinc-50 bg-white`}>
+                    {loadingRegistry ? (
+                      <View style={tw`py-4 items-center`}>
+                        <ActivityIndicator size="small" color={colors.gold} />
+                        <Text style={tw`text-xs text-zinc-400 font-bold mt-2`}>Querying database records...</Text>
+                      </View>
+                    ) : registryError ? (
+                      <Text style={tw`text-xs text-red-500 font-bold text-center py-2`}>{registryError}</Text>
+                    ) : registeredUsers.length === 0 ? (
+                      <Text style={tw`text-xs text-zinc-400 font-bold text-center py-2`}>No registered members found.</Text>
+                    ) : (
+                      <View style={tw`gap-3`}>
+                        {registeredUsers.map((user) => (
+                          <View key={user.id} style={tw`flex-row items-center justify-between border-b border-zinc-50 pb-2.5`}>
+                            <View style={tw`flex-1`}>
+                              <Text style={tw`text-xs font-black text-zinc-800`}>{user.full_name}</Text>
+                              <Text style={tw`text-[10px] text-zinc-400 font-bold`}>{user.email}</Text>
+                            </View>
+                            <View style={tw`items-end`}>
+                              <Text style={[tw`text-[8px] font-black uppercase px-2 py-0.5 rounded bg-zinc-50 border border-zinc-100`, { color: colors.gold }]}>
+                                ID: #{user.id}
+                              </Text>
+                              <Text style={tw`text-[8px] text-zinc-300 font-bold mt-1`}>
+                                {user.created_at ? new Date(user.created_at.replace(' ', 'T')).toLocaleDateString() : ''}
+                              </Text>
+                            </View>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            </View>
+
             <View>
               <Text style={tw`text-[11px] font-bold text-zinc-400 uppercase tracking-[3px] mb-4`}>Preference & Security</Text>
               <View style={tw`gap-1`}>
@@ -150,7 +252,10 @@ export function ProfileView({ onViewChange }: { onViewChange: (v: ViewState) => 
             {/* Logout */}
             <TouchableOpacity 
               style={tw`flex-row items-center justify-center gap-2 py-4 bg-zinc-900 rounded-2xl shadow-lg mt-4`}
-              onPress={() => onViewChange('auth')}
+              onPress={() => {
+                setCurrentUser(null);
+                onViewChange('auth');
+              }}
             >
               <LogOut size={18} color="white" />
               <Text style={tw`text-white text-sm font-bold uppercase tracking-widest`}>End Session</Text>
@@ -163,3 +268,4 @@ export function ProfileView({ onViewChange }: { onViewChange: (v: ViewState) => 
     </View>
   );
 }
+

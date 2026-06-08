@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Animated, Dimensions, StatusBar } from 'react-native';
 import { ThemeProvider, useTheme, colors } from './theme';
-import { ViewState, Listing } from './types';
+import { ViewState, Listing, User } from './types';
 import { BottomNav } from './components/BottomNav';
 import { AuthView } from './views/AuthView';
 import { HomeView } from './views/HomeView';
@@ -12,11 +12,12 @@ import { ProfileView } from './views/ProfileView';
 import { AddListingView } from './views/AddListingView';
 import { SettingsView } from './views/SettingsView';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 function AppContent() {
   const { isDark } = useTheme();
   const [currentView, setCurrentView] = useState<ViewState>('auth');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [exploreType, setExploreType] = useState<Listing['type']>('car');
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -52,7 +53,7 @@ function AppContent() {
   const renderView = () => {
     switch (currentView) {
       case 'auth':
-        return <AuthView onViewChange={handleViewChange} />;
+        return <AuthView onViewChange={handleViewChange} onLoginSuccess={setCurrentUser} />;
       case 'home':
         return <HomeView onViewChange={handleViewChange} onListingClick={handleListingClick} onCategorySelect={handleExploreChange} />;
       case 'explore':
@@ -64,13 +65,14 @@ function AppContent() {
       case 'inbox':
         return <InboxView onViewChange={handleViewChange} />;
       case 'profile':
-        return <ProfileView onViewChange={handleViewChange} />;
+        return <ProfileView onViewChange={handleViewChange} currentUser={currentUser} setCurrentUser={setCurrentUser} />;
       case 'settings':
         return <SettingsView onViewChange={handleViewChange} />;
       default:
         return null;
     }
   };
+
 
   return (
     <View style={{ flex: 1, backgroundColor: isDark ? colors.dark.bg : '#ffffff' }}>
