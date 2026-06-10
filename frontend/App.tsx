@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { View, Animated, Dimensions, StatusBar } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Animated, StatusBar } from 'react-native';
 import { ThemeProvider, useTheme, colors } from './theme';
 import { ViewState, Listing, User } from './types';
 import { BottomNav } from './components/BottomNav';
@@ -11,8 +11,6 @@ import { InboxView } from './views/InboxView';
 import { ProfileView } from './views/ProfileView';
 import { AddListingView } from './views/AddListingView';
 import { SettingsView } from './views/SettingsView';
-
-const { width } = Dimensions.get('window');
 
 function AppContent() {
   const { isDark } = useTheme();

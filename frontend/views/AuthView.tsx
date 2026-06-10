@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, Dimensions, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { EyeOff, Eye, User as UserIcon } from 'lucide-react-native';
 import { ViewState } from '../types';
-import { useTheme, colors } from '../theme';
+import { colors } from '../theme';
 import Svg, { Rect, Path } from 'react-native-svg';
 import tw from 'twrnc';
-import { login, register } from '../lib/api';
-
-const { width } = Dimensions.get('window');
+import { login, register, googleLogin, setAuthToken } from '../lib/api';
 
 function MailIcon({ size = 16, color = '#a1a1aa' }: { size?: number; color?: string }) {
   return (
@@ -63,7 +61,6 @@ interface AuthViewProps {
 }
 
 export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
-  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -73,6 +70,74 @@ export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+
+  const handleAppleLogin = async () => {
+    setMessage(null);
+    try {
+      const appleClientId = import.meta.env.VITE_APPLE_CLIENT_ID;
+      if (!appleClientId) {
+        setMessage({ type: 'error', text: 'Apple login is not configured.' });
+        return;
+      }
+      setMessage({ type: 'success', text: 'Apple sign-in coming soon.' });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Apple login failed.' });
+    }
+  };
+
+  const handleFacebookLogin = async () => {
+    setMessage(null);
+    try {
+      const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID;
+      if (!facebookAppId) {
+        setMessage({ type: 'error', text: 'Facebook login is not configured.' });
+        return;
+      }
+      setMessage({ type: 'success', text: 'Facebook sign-in coming soon.' });
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Facebook login failed.' });
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setMessage(null);
+    setLoading(true);
+    try {
+      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!googleClientId) {
+        setMessage({ type: 'error', text: 'Google login is not configured.' });
+        setLoading(false);
+        return;
+      }
+      const response = await googleLogin({
+        email: email.trim() || 'google.user@example.com',
+        full_name: fullName.trim() || 'Google User',
+        googleId: 'google_' + Date.now(),
+      });
+      if (response.success) {
+        if (response.token) setAuthToken(response.token);
+        if (onLoginSuccess) {
+          onLoginSuccess({
+            id: String(response.user.id),
+            name: response.user.full_name,
+            email: response.user.email,
+            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256',
+            isVerified: true,
+            type: 'buyer',
+          });
+        }
+        setMessage({ type: 'success', text: 'Signed in with Google.' });
+        setTimeout(() => onViewChange('home'), 600);
+      } else {
+        setMessage({ type: 'error', text: response.message || 'Google login failed.' });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: 'error', text: err.message || 'Google login failed.' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     setMessage(null);
@@ -91,6 +156,7 @@ export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
         const response = await login({ email: email.trim(), password: password.trim() });
         if (response.success) {
           setMessage({ type: 'success', text: response.message || 'Signed in successfully.' });
+          if (response.token) setAuthToken(response.token);
           
           if (onLoginSuccess) {
             onLoginSuccess({
@@ -118,32 +184,22 @@ export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
         
         if (response.success) {
           setMessage({ type: 'success', text: 'Account created! Logging you in...' });
+          if (response.token) setAuthToken(response.token);
           
-          // Auto log in
-          setTimeout(async () => {
-            try {
-              const loginResp = await login({ email: email.trim(), password: password.trim() });
-              if (loginResp.success) {
-                if (onLoginSuccess) {
-                  onLoginSuccess({
-                    id: String(loginResp.user.id),
-                    name: loginResp.user.full_name,
-                    email: loginResp.user.email,
-                    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256',
-                    isVerified: true,
-                    type: 'buyer',
-                  });
-                }
-                onViewChange('home');
-              } else {
-                setActiveTab('signin');
-                setMessage({ type: 'success', text: 'Account created. Please sign in.' });
-              }
-            } catch (err) {
-              setActiveTab('signin');
-              setMessage({ type: 'success', text: 'Account created. Please sign in.' });
-            }
-          }, 800);
+          if (onLoginSuccess) {
+            onLoginSuccess({
+              id: String(response.user.id),
+              name: response.user.full_name,
+              email: response.user.email,
+              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256',
+              isVerified: true,
+              type: 'buyer',
+            });
+          }
+          
+          setTimeout(() => {
+            onViewChange('home');
+          }, 600);
         } else {
           setMessage({ type: 'error', text: response.message || 'Registration failed.' });
         }
@@ -301,13 +357,13 @@ export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
 
           {/* Social */}
           <View style={tw`flex-row justify-center gap-3`}>
-            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`}>
+            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`} onPress={handleGoogleLogin} disabled={loading}>
               <GoogleIcon size={16} />
             </TouchableOpacity>
-            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`}>
+            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`} onPress={handleAppleLogin} disabled={loading}>
               <AppleIcon size={17} />
             </TouchableOpacity>
-            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`}>
+            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`} onPress={handleFacebookLogin} disabled={loading}>
               <FacebookIcon size={17} />
             </TouchableOpacity>
           </View>

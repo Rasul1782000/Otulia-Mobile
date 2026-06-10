@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
 import { ArrowLeft, Bell, Heart, Search, SlidersHorizontal, ChevronDown } from 'lucide-react-native';
 import { listings } from '../data';
 import { ViewState, Listing } from '../types';
-import { useTheme, colors } from '../theme';
+import { colors } from '../theme';
 import tw from 'twrnc';
 
 export function ExploreView({ onViewChange, onListingClick, defaultType, onTypeChange }: { onTypeChange: (t: Listing['type']) => void, defaultType: Listing['type'], onViewChange: (v: ViewState) => void, onListingClick: (l: Listing) => void }) {
-  const { isDark } = useTheme();
-  const [activeType, setActiveType] = useState<Listing['type']>(defaultType || 'car');
+  const activeType = defaultType || 'car';
   const filteredListings = listings.filter(l => l.type === activeType);
 
   return (
@@ -18,7 +16,10 @@ export function ExploreView({ onViewChange, onListingClick, defaultType, onTypeC
         <View style={tw`relative h-80 bg-black`}>
           <Image
             source={{ uri: activeType === 'car' ?
-              "https://images.unsplash.com/photo-1614200187524-dc4b892acf16?auto=format&fit=crop&q=80&w=1200" :
+              "https://images.unsplash.com/photo-1614200187524-dc4b892acf16?auto=format&fit=crop&q=80&w=1200" : activeType === 'bike' ?
+              "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?auto=format&fit=crop&q=80&w=1200" : activeType === 'yacht' ?
+              "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&q=80&w=1200" : activeType === 'jet' ?
+              "https://images.unsplash.com/photo-1540962351504-03099e0a754b?auto=format&fit=crop&q=80&w=1200" :
               "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200" }}
             style={[tw`absolute inset-0 w-full h-full`, { opacity: 0.6 }]}
           />
@@ -48,16 +49,16 @@ export function ExploreView({ onViewChange, onListingClick, defaultType, onTypeC
 
           <View style={tw`relative z-10 px-6 mt-10`}>
             <Text style={tw`text-4xl font-black text-white mb-2`}>
-              {activeType === 'car' ? 'Cars' : 'Estates'}
+              {activeType === 'car' ? 'Cars' : activeType === 'bike' ? 'Bikes' : activeType === 'yacht' ? 'Yachts' : activeType === 'jet' ? 'Jets' : 'Estates'}
             </Text>
             <View style={tw`flex-row items-center gap-2 mb-4`}>
               <View style={[tw`w-8 h-[2px]`, { backgroundColor: colors.gold }]} />
               <Text style={[tw`text-lg font-black uppercase tracking-widest`, { color: colors.gold }]}>
-                {activeType === 'car' ? 'Drive excellence' : 'Exclusive spaces'}
+                {activeType === 'car' ? 'Drive excellence' : activeType === 'bike' ? 'Two-wheel perfection' : activeType === 'yacht' ? 'Ocean-bound freedom' : activeType === 'jet' ? 'Unmatched global reach' : 'Exclusive spaces'}
               </Text>
             </View>
             <Text style={tw`text-sm text-zinc-200 w-3/4 font-black leading-5`}>
-              {activeType === 'car' ? 'Explore the world\'s finest automobiles. Curated for the exceptional.' : 'Discover the world\'s most exceptional homes and architectural masterpieces.'}
+              {activeType === 'car' ? 'Explore the world\'s finest automobiles. Curated for the exceptional.' : activeType === 'bike' ? 'Discover the most elite motorcycles engineered for performance and prestige.' : activeType === 'yacht' ? 'Extraordinary vessels built for those who demand the ultimate on water.' : activeType === 'jet' ? 'Private aviation redefined — speed, luxury, and global connectivity.' : 'Discover the world\'s most exceptional homes and architectural masterpieces.'}
             </Text>
           </View>
         </View>
@@ -68,7 +69,7 @@ export function ExploreView({ onViewChange, onListingClick, defaultType, onTypeC
           <View style={tw`bg-zinc-50 rounded-2xl flex-row items-center p-4 mb-6 border border-zinc-100 shadow-sm`}>
             <Search size={20} color="#71717a" style={tw`mr-3`} />
             <TextInput
-              placeholder={activeType === 'car' ? "Search make, model, year..." : "Search location, property, style..."}
+              placeholder={activeType === 'car' ? "Search make, model, year..." : activeType === 'estate' ? "Search location, property, style..." : "Search by name, brand, specs..."}
               placeholderTextColor="#71717a"
               style={tw`flex-1 text-sm text-zinc-900 font-black`}
               onSubmitEditing={() => Alert.alert('Search', 'Executing advanced marketplace search...')}
@@ -84,7 +85,7 @@ export function ExploreView({ onViewChange, onListingClick, defaultType, onTypeC
           {/* Chips */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={tw`gap-3 mb-8`}>
             <TouchableOpacity style={[tw`flex-row items-center gap-2 border px-5 py-2.5 rounded-full shadow-sm`, { backgroundColor: 'rgba(193,155,108,0.1)', borderColor: colors.gold }]}>
-              <Text style={[tw`text-xs font-black uppercase tracking-wider`, { color: colors.gold }]}>All {activeType === 'car' ? 'Cars' : 'Estates'}</Text>
+              <Text style={[tw`text-xs font-black uppercase tracking-wider`, { color: colors.gold }]}>All {activeType === 'car' ? 'Cars' : activeType === 'bike' ? 'Bikes' : activeType === 'yacht' ? 'Yachts' : activeType === 'jet' ? 'Jets' : 'Estates'}</Text>
             </TouchableOpacity>
             {['Brand', 'Model', 'Price Range', 'Condition'].map(chip => (
               <TouchableOpacity key={chip} style={tw`flex-row items-center gap-1.5 bg-zinc-50 border border-zinc-100 px-5 py-2.5 rounded-full`} onPress={() => Alert.alert('Filter', `Filtering by ${chip}...`)}>
@@ -116,6 +117,11 @@ export function ExploreView({ onViewChange, onListingClick, defaultType, onTypeC
                   {listing.isFeatured && (
                     <View style={tw`absolute top-4 left-4 bg-[#c19b6c] px-3 py-1.5 rounded-full shadow-lg`}>
                       <Text style={tw`text-white text-[10px] font-black uppercase tracking-widest`}>Exclusive</Text>
+                    </View>
+                  )}
+                  {listing.images.length > 1 && (
+                    <View style={tw`absolute top-4 right-14 bg-black/50 px-2 py-1 rounded-full shadow-lg`}>
+                      <Text style={tw`text-white text-[10px] font-black`}>📷 {listing.images.length}</Text>
                     </View>
                   )}
                   <TouchableOpacity style={tw`absolute top-4 right-4 p-2.5 bg-white/20 rounded-full shadow-lg`} onPress={() => Alert.alert('Saved', 'Item added to watchlist.')}>

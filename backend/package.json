@@ -7,21 +7,27 @@
         "dev": "tsx src/server.ts",
         "build": "esbuild src/server.ts --bundle --platform=node --format=esm --outfile=dist/server.js",
         "start": "node dist/server.js",
-        "clean": "rm -rf dist"
+        "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\""
     },
     "dependencies": {
         "bcryptjs": "^3.0.3",
         "better-sqlite3": "^12.10.0",
+        "cloudinary": "^2.10.0",
         "cors": "^2.8.6",
         "dotenv": "^17.2.3",
-        "express": "^4.21.2"
+        "express": "^4.21.2",
+        "google-auth-library": "^10.7.0",
+        "jsonwebtoken": "^9.0.3",
+        "nodemailer": "^8.0.10"
     },
     "devDependencies": {
         "@types/bcryptjs": "^2.4.6",
         "@types/better-sqlite3": "^7.6.13",
         "@types/cors": "^2.8.19",
         "@types/express": "^4.17.21",
+        "@types/jsonwebtoken": "^9.0.10",
         "@types/node": "^22.14.0",
+        "@types/nodemailer": "^8.0.0",
         "esbuild": "^0.25.0",
         "tsx": "^4.21.0",
         "typescript": "~5.8.2"

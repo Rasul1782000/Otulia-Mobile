@@ -1,15 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Dimensions, Alert } from 'react-native';
-import { ArrowLeft, Heart, Share, Play, Box, CheckCircle2, Calendar, Phone, MessageCircle, MoreHorizontal } from 'lucide-react-native';
+import { useState } from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { ArrowLeft, Heart, Share, Box, CheckCircle2, Calendar, Phone, MessageCircle, Smartphone } from 'lucide-react-native';
 import { Listing, ViewState } from '../types';
-import { useTheme, colors } from '../theme';
+import { colors } from '../theme';
+import { ImageGalleryModal } from '../components/ImageGalleryModal';
+import { openWhatsApp } from '../lib/whatsapp';
 import tw from 'twrnc';
 
-const { width } = Dimensions.get('window');
-
 export function DetailView({ listing, onViewChange }: { listing: Listing, onViewChange: (v: ViewState) => void }) {
-  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('Overview');
+  const [galleryVisible, setGalleryVisible] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   if (!listing) return null;
 
@@ -17,7 +18,7 @@ export function DetailView({ listing, onViewChange }: { listing: Listing, onView
     <View style={tw`flex-1 bg-white`}>
       <ScrollView style={tw`flex-1`} contentContainerStyle={tw`pb-32`}>
         {/* Header & Gallery */}
-        <View style={tw`relative h-96 bg-black`}>
+        <TouchableOpacity activeOpacity={1} style={tw`relative h-96 bg-black`} onPress={() => { setGalleryIndex(0); setGalleryVisible(true); }}>
           <Image 
             source={{ uri: listing.images[0] }} 
             style={[tw`absolute inset-0 w-full h-full`, { opacity: 0.8 }]}
@@ -55,7 +56,7 @@ export function DetailView({ listing, onViewChange }: { listing: Listing, onView
           )}
 
           <View style={tw`absolute bottom-4 left-6 bg-black/50 px-3 py-1 rounded-full z-10`}>
-            <Text style={tw`text-white text-xs font-black`}>1/24</Text>
+            <Text style={tw`text-white text-xs font-black`}>1/{listing.images.length}</Text>
           </View>
           <TouchableOpacity style={tw`absolute bottom-4 right-6 bg-black/50 p-2 rounded-full z-10`} onPress={() => Alert.alert('3D View', 'Loading immersive 3D model...')}>
             <Box size={16} color="white" />
@@ -64,18 +65,19 @@ export function DetailView({ listing, onViewChange }: { listing: Listing, onView
           {/* Thumbnail Strip */}
           <View style={tw`absolute -bottom-10 left-0 w-full px-6 z-20`}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={tw`gap-2 pb-2`}>
-              {[1,2,3,4].map((_, i) => (
-                <TouchableOpacity key={i} style={tw`w-20 h-16 rounded-lg overflow-hidden border border-zinc-200 relative`} onPress={() => Alert.alert('Gallery', `Viewing image ${i + 1} of 24`)}>
-                  <Image source={{ uri: listing.images[0] }} style={tw`w-full h-full`} />
-                  {i === 1 && <View style={tw`absolute inset-0 bg-black/40 items-center justify-center`}><Play size={24} color="white"/></View>}
+              {listing.images.slice(0, 5).map((img, i) => (
+                <TouchableOpacity key={i} style={tw`w-20 h-16 rounded-lg overflow-hidden border border-zinc-200 relative`} onPress={() => { setGalleryIndex(i); setGalleryVisible(true); }}>
+                  <Image source={{ uri: img }} style={tw`w-full h-full`} />
                 </TouchableOpacity>
               ))}
-              <TouchableOpacity style={tw`w-20 h-16 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-900 items-center justify-center`} onPress={() => Alert.alert('Gallery', 'Opening full image gallery...')}>
-                <Text style={tw`text-white text-sm font-black`}>+19</Text>
-              </TouchableOpacity>
+              {listing.images.length > 5 && (
+                <TouchableOpacity style={tw`w-20 h-16 rounded-lg overflow-hidden border border-zinc-200 bg-zinc-900 items-center justify-center`} onPress={() => { setGalleryIndex(0); setGalleryVisible(true); }}>
+                  <Text style={tw`text-white text-sm font-black`}>+{listing.images.length - 5}</Text>
+                </TouchableOpacity>
+              )}
             </ScrollView>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <View style={tw`px-6 pt-16`}>
           {/* Title & Price */}
@@ -115,6 +117,13 @@ export function DetailView({ listing, onViewChange }: { listing: Listing, onView
             >
               <MessageCircle size={16} color="#4b5563" />
               <Text style={tw`text-sm font-black text-zinc-800`}>Chat</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[tw`flex-1 py-3 rounded-xl flex-row items-center justify-center gap-2 border`, { backgroundColor: '#dcfce7', borderColor: '#bbf7d0' }]}
+              onPress={() => openWhatsApp(`Hi, I'm interested in ${listing.title} (${listing.currency}${listing.price.toLocaleString()}).`)}
+            >
+              <Smartphone size={16} color="#166534" />
+              <Text style={tw`text-sm font-black text-green-800`}>WhatsApp</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -169,6 +178,9 @@ export function DetailView({ listing, onViewChange }: { listing: Listing, onView
               <TouchableOpacity style={tw`w-8 h-8 rounded-full border border-zinc-200 items-center justify-center`} onPress={() => onViewChange('inbox')}>
                 <MessageCircle size={14} color="#71717a"/>
               </TouchableOpacity>
+              <TouchableOpacity style={tw`w-8 h-8 rounded-full border border-green-200 items-center justify-center bg-green-50`} onPress={() => openWhatsApp(`Hi, I'm interested in ${listing.title}.`)}>
+                <Smartphone size={14} color="#166534"/>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </View>
@@ -198,6 +210,13 @@ export function DetailView({ listing, onViewChange }: { listing: Listing, onView
           </TouchableOpacity>
         </View>
       </View>
+
+      <ImageGalleryModal
+        visible={galleryVisible}
+        images={listing.images}
+        initialIndex={galleryIndex}
+        onClose={() => setGalleryVisible(false)}
+      />
     </View>
   );
 }

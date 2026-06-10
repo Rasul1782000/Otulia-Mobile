@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { Settings, Edit2, Heart, Calendar, Search, Shield, User as UserIcon, LogOut, ChevronRight, CheckCircle2, DollarSign, MessageCircle, Users } from 'lucide-react-native';
+import { Settings, Edit2, Heart, Calendar, Search, Shield, LogOut, ChevronRight, CheckCircle2, DollarSign, MessageCircle, Users, Smartphone } from 'lucide-react-native';
 import { useTheme, colors } from '../theme';
 import { ViewState, User } from '../types';
 import tw from 'twrnc';
 import { getUsers } from '../lib/api';
+import { openWhatsApp } from '../lib/whatsapp';
 
 interface ProfileViewProps {
   onViewChange: (v: ViewState) => void;
@@ -210,12 +211,15 @@ export function ProfileView({ onViewChange, currentUser, setCurrentUser }: Profi
                 {[
                   { icon: Search, title: 'Search Preferences', desc: 'Customize your alerts', target: 'settings' },
                   { icon: Shield, title: 'Privacy & Security', desc: 'Account protection', target: 'settings' },
+                  { icon: Smartphone, title: 'WhatsApp Support', desc: 'Chat with our concierge team', target: 'whatsapp' },
                 ].map((item, i) => (
                   <TouchableOpacity 
                     key={i} 
                     style={tw`flex-row items-center justify-between py-4`}
                     onPress={() => {
-                      if (item.target) onViewChange(item.target as any);
+                      if (item.target === 'whatsapp') {
+                        openWhatsApp('Hi Otulia team, I need assistance.');
+                      } else if (item.target) onViewChange(item.target as any);
                       else Alert.alert(item.title, `Opening ${item.title.toLowerCase()} settings...`);
                     }}
                   >

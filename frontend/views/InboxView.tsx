@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
-import { Edit, Image as ImageIcon } from 'lucide-react-native';
+import { Edit, Smartphone } from 'lucide-react-native';
 import { messages, senders, listings } from '../data';
 import { ViewState } from '../types';
-import { useTheme, colors } from '../theme';
+import { colors } from '../theme';
 import tw from 'twrnc';
+import { openWhatsApp } from '../lib/whatsapp';
 
 export function InboxView({ onViewChange }: { onViewChange: (v: ViewState) => void }) {
-  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState('All Messages');
   const tabs = ['All Messages', 'Unread', 'Starred', 'Archive'];
 
@@ -112,20 +112,28 @@ export function InboxView({ onViewChange }: { onViewChange: (v: ViewState) => vo
               </View>
 
               {listing && (
-                <TouchableOpacity 
-                  style={tw`w-16 h-16 rounded-xl overflow-hidden border border-zinc-200 bg-zinc-100`}
-                  onPress={() => {
-                    const l = listings.find(lst => lst.id === msg.listingId);
-                    if (l) onViewChange('detail');
-                  }}
-                >
-                  <Image source={{ uri: listing.images[0] }} style={[tw`w-full h-full`, { opacity: 0.9 }]} />
-                  {msg.unread && (
-                    <View style={[tw`absolute -top-1 -right-1 w-5 h-5 rounded-full items-center justify-center border-2 border-white`, { backgroundColor: colors.gold }]}>
-                      <Text style={tw`text-[9px] font-bold text-white`}>2</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                <View style={tw`items-center gap-2`}>
+                  <TouchableOpacity 
+                    style={tw`w-16 h-16 rounded-xl overflow-hidden border border-zinc-200 bg-zinc-100`}
+                    onPress={() => {
+                      const l = listings.find(lst => lst.id === msg.listingId);
+                      if (l) onViewChange('detail');
+                    }}
+                  >
+                    <Image source={{ uri: listing.images[0] }} style={[tw`w-full h-full`, { opacity: 0.9 }]} />
+                    {msg.unread && (
+                      <View style={[tw`absolute -top-1 -right-1 w-5 h-5 rounded-full items-center justify-center border-2 border-white`, { backgroundColor: colors.gold }]}>
+                        <Text style={tw`text-[9px] font-bold text-white`}>2</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[tw`w-7 h-7 rounded-full items-center justify-center`, { backgroundColor: '#dcfce7' }]}
+                    onPress={() => openWhatsApp(`Hi, I'm responding to your inquiry about ${listing.title}.`)}
+                  >
+                    <Smartphone size={12} color="#166534" />
+                  </TouchableOpacity>
+                </View>
               )}
             </TouchableOpacity>
           );

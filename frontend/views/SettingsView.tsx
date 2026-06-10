@@ -1,9 +1,9 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, Switch } from 'react-native';
-import { ArrowLeft, Bell, Shield, User, Globe, Moon, CreditCard, ChevronRight, HelpCircle, Info } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, Switch, Alert } from 'react-native';
+import { ArrowLeft, Bell, Shield, User, Globe, Moon, CreditCard, ChevronRight, HelpCircle, Info, Smartphone } from 'lucide-react-native';
 import { ViewState } from '../types';
 import { useTheme, colors } from '../theme';
 import tw from 'twrnc';
+import { openWhatsApp } from '../lib/whatsapp';
 
 export function SettingsView({ onViewChange }: { onViewChange: (v: ViewState) => void }) {
   const { isDark, toggleTheme } = useTheme();
@@ -115,8 +115,14 @@ export function SettingsView({ onViewChange }: { onViewChange: (v: ViewState) =>
               { icon: HelpCircle, title: 'Help Center' },
               { icon: Info, title: 'About Otulia' },
               { icon: Shield, title: 'Privacy Policy' },
+              { icon: Smartphone, title: 'WhatsApp Support', target: 'whatsapp' },
             ].map((item, i) => (
-              <TouchableOpacity key={i} style={tw`flex-row items-center justify-between px-6 py-5 border-b border-zinc-50`}>
+              <TouchableOpacity key={i} style={tw`flex-row items-center justify-between px-6 py-5 border-b border-zinc-50`}
+                onPress={() => {
+                  if (item.target === 'whatsapp') openWhatsApp('Hi Otulia team, I need assistance.');
+                  else Alert.alert(item.title, `Opening ${item.title}...`);
+                }}
+              >
                 <View style={tw`flex-row items-center gap-4`}>
                    <View style={[tw`w-10 h-10 rounded-xl items-center justify-center bg-zinc-50`]}>
                      <item.icon size={18} color="#71717a" />

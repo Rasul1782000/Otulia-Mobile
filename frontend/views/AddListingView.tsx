@@ -1,17 +1,43 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, TextInput } from 'react-native';
-import { ArrowLeft, ImagePlus, Upload } from 'lucide-react-native';
+import { useState } from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { ArrowLeft, ImagePlus } from 'lucide-react-native';
 import { ViewState } from '../types';
-import { useTheme, colors } from '../theme';
+import { colors } from '../theme';
+import { uploadImage } from '../lib/api';
 import tw from 'twrnc';
 
 export function AddListingView({ onViewChange }: { onViewChange: (v: ViewState) => void }) {
-  const { isDark } = useTheme();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handleImageUpload = () => {
-    // In a real app, we would use expo-image-picker here
-    console.log('Image upload clicked');
+  const handleImageUpload = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e: any) => {
+      const file = e.target?.files?.[0];
+      if (!file) return;
+      try {
+        setUploading(true);
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          const result = await uploadImage({ image: base64, folder: 'otulia_listings' });
+          if (result.success) {
+            setImagePreview(result.url);
+            Alert.alert('Uploaded', 'Image uploaded successfully to Cloudinary.');
+          } else {
+            Alert.alert('Error', result.message || 'Upload failed.');
+          }
+          setUploading(false);
+        };
+        reader.readAsDataURL(file);
+      } catch (err: any) {
+        Alert.alert('Error', err.message || 'Upload failed.');
+        setUploading(false);
+      }
+    };
+    input.click();
   };
 
   return (
@@ -36,8 +62,11 @@ export function AddListingView({ onViewChange }: { onViewChange: (v: ViewState) 
         <TouchableOpacity 
           style={tw`w-full h-56 border-2 border-dashed border-zinc-200 rounded-[28px] items-center justify-center bg-zinc-50 overflow-hidden mb-8 shadow-sm`}
           onPress={handleImageUpload}
+          disabled={uploading}
         >
-          {imagePreview ? (
+          {uploading ? (
+            <ActivityIndicator size="large" color={colors.gold} />
+          ) : imagePreview ? (
             <Image source={{ uri: imagePreview }} style={tw`w-full h-full`} />
           ) : (
             <View style={tw`items-center`}>

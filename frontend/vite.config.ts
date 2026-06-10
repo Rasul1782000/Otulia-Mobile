@@ -1,29 +1,59 @@
-// vite.config.ts
 import path from 'path';
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
-  // Load environment variables from the custom env folder
   const env = loadEnv(mode, path.resolve(__dirname, 'env'), '');
-  // Merge loaded env variables into process.env so import.meta.env can access them
-  process.env = { ...process.env, ...env };
+  for (const key in env) {
+    process.env[key] = env[key];
+  }
 
   return {
-    plugins: [react(), tailwindcss()],
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-        'react-native': 'react-native-web',
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: 'react-native-web-stubs',
+        enforce: 'pre',
+        resolveId(id) {
+          if (id === 'lucide-react-native/dist/esm/context.mjs') {
+            return path.resolve(__dirname, 'react-native-stubs/lucide-context.mjs');
+          }
+          return null;
+        },
+        transform(code, id) {
+          if (id.includes('NativeSvgRenderableModule') || id.includes('NativeSvgViewModule')) {
+            return {
+              code: `const TurboModuleRegistry = { getEnforcing: () => ({}), get: () => ({}) };\nexport default TurboModuleRegistry;`,
+              map: null,
+            };
+          }
+          return null;
+        },
       },
+    ],
+    resolve: {
+      alias: [
+        { find: '@', replacement: path.resolve(__dirname, '.') },
+        { find: 'react-native/Libraries/Utilities/codegenNativeComponent', replacement: path.resolve(__dirname, 'react-native-stubs/codegenNativeComponent.ts') },
+        { find: 'react-native', replacement: 'react-native-web' },
+      ],
+      conditions: ['react-native'],
+    },
+    optimizeDeps: {
+      exclude: ['react-native-svg', 'lucide-react-native'],
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:5001',
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     },
   };
 });

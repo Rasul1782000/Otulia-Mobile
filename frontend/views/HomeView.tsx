@@ -1,13 +1,11 @@
-import React from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
-import { Bell, Menu, Search, SlidersHorizontal, Heart, Calendar } from 'lucide-react-native';
+import { Bell, Menu, Search, SlidersHorizontal, Heart } from 'lucide-react-native';
 import { categories, listings } from '../data';
 import { ViewState, Listing } from '../types';
-import { useTheme, colors } from '../theme';
+import { colors } from '../theme';
 import tw from 'twrnc';
 
 export function HomeView({ onViewChange, onListingClick, onCategorySelect }: { onCategorySelect: (t: Listing['type']) => void, onViewChange: (v: ViewState) => void, onListingClick: (l: Listing) => void }) {
-  const { isDark } = useTheme();
 
   return (
     <ScrollView style={tw`flex-1 bg-white pb-24`} contentContainerStyle={tw`pb-24`}>
@@ -116,6 +114,11 @@ export function HomeView({ onViewChange, onListingClick, onCategorySelect }: { o
                 <View style={tw`absolute top-3 left-3 bg-[#c19b6c] px-3 py-1 rounded-full shadow-sm`}>
                   <Text style={tw`text-white text-[10px] font-black uppercase tracking-widest`}>{listing.type}</Text>
                 </View>
+                {listing.images.length > 1 && (
+                  <View style={tw`absolute top-3 right-14 bg-black/50 px-2 py-1 rounded-full shadow-sm`}>
+                    <Text style={tw`text-white text-[10px] font-black`}>📷 {listing.images.length}</Text>
+                  </View>
+                )}
                 <TouchableOpacity style={tw`absolute top-3 right-3 p-2 bg-white/20 rounded-full`}>
                   <Heart size={18} color="white" />
                 </TouchableOpacity>
