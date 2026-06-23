@@ -1,5 +1,14 @@
 export type ViewState = 'auth' | 'home' | 'explore' | 'detail' | 'inbox' | 'profile' | 'add-listing' | 'settings';
 
+export interface CloudinaryImage {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  format: string;
+  loading: 'auto' | 'lazy' | 'eager';
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -13,10 +22,11 @@ export interface Listing {
   type: 'car' | 'estate' | 'bike' | 'yacht' | 'jet';
   title: string;
   subtitle?: string;
+  brand: string;
   price: number;
   currency: string;
   location: string;
-  images: string[];
+  images: CloudinaryImage[];
   specs: Record<string, string>;
   isFeatured?: boolean;
   dealerId?: string;

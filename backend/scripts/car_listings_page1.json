@@ -1,0 +1,263 @@
+{
+  "success": true,
+  "listings": [
+    {
+      "id": "l1",
+      "type": "car",
+      "title": "Lamborghini Revuelto",
+      "brand": "Lamborghini",
+      "price": 530000,
+      "currency": "€",
+      "location": "Munich, Germany",
+      "images": [
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l1/revuelto-1",
+          "alt": "Lamborghini Revuelto",
+          "width": 1200,
+          "height": 900,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l1/revuelto-2",
+          "alt": "Lamborghini Revuelto",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l1/revuelto-3",
+          "alt": "Lamborghini Revuelto",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l1/revuelto-4",
+          "alt": "Lamborghini Revuelto",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        }
+      ],
+      "specs": {
+        "Year": "2024",
+        "Mileage": "2,100 km",
+        "Type": "Hybrid"
+      },
+      "isFeatured": true,
+      "created_at": "2026-06-11 05:46:26"
+    },
+    {
+      "id": "l2",
+      "type": "car",
+      "title": "Ferrari Daytona SP3",
+      "brand": "Ferrari",
+      "price": 2200000,
+      "currency": "€",
+      "location": "Monaco",
+      "images": [
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l2/azure-heights-1",
+          "alt": "Ferrari Daytona SP3",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l2/azure-heights-2",
+          "alt": "Ferrari Daytona SP3",
+          "width": 1200,
+          "height": 1006,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l2/azure-heights-3",
+          "alt": "Ferrari Daytona SP3",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        }
+      ],
+      "specs": {
+        "Year": "2023",
+        "Mileage": "450 km",
+        "Engine": "V12"
+      },
+      "isFeatured": true,
+      "created_at": "2026-06-11 05:46:26"
+    },
+    {
+      "id": "l3",
+      "type": "car",
+      "title": "Bugatti Chiron Pur Sport",
+      "brand": "Bugatti",
+      "price": 3600000,
+      "currency": "€",
+      "location": "Zurich, Switzerland",
+      "images": [
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l7/bugatti-chiron-1",
+          "alt": "Bugatti Chiron Pur Sport",
+          "width": 0,
+          "height": 0,
+          "format": "unknown",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l7/bugatti-chiron-2",
+          "alt": "Bugatti Chiron Pur Sport",
+          "width": 0,
+          "height": 0,
+          "format": "unknown",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l7/bugatti-chiron-4",
+          "alt": "Bugatti Chiron Pur Sport",
+          "width": 0,
+          "height": 0,
+          "format": "unknown",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l7/bugatti-chiron-5",
+          "alt": "Bugatti Chiron Pur Sport",
+          "width": 0,
+          "height": 0,
+          "format": "unknown",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l7/bugatti-chiron-6",
+          "alt": "Bugatti Chiron Pur Sport",
+          "width": 0,
+          "height": 0,
+          "format": "unknown",
+          "loading": "auto"
+        }
+      ],
+      "specs": {
+        "Year": "2022",
+        "Mileage": "800 km",
+        "Power": "1500 hp"
+      },
+      "isFeatured": false,
+      "created_at": "2026-06-11 05:46:26"
+    },
+    {
+      "id": "l4",
+      "type": "car",
+      "title": "Porsche 911 Turbo S",
+      "brand": "Porsche",
+      "price": 210000,
+      "currency": "€",
+      "location": "Stuttgart, Germany",
+      "images": [
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l4/ferrari-daytona-2",
+          "alt": "Porsche 911 Turbo S",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l4/ferrari-daytona-3",
+          "alt": "Porsche 911 Turbo S",
+          "width": 1200,
+          "height": 844,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l4/ferrari-daytona-4",
+          "alt": "Porsche 911 Turbo S",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l4/ferrari-daytona-5",
+          "alt": "Porsche 911 Turbo S",
+          "width": 1200,
+          "height": 1500,
+          "format": "png",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l4/ferrari-daytona-6",
+          "alt": "Porsche 911 Turbo S",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        }
+      ],
+      "specs": {
+        "Year": "2024",
+        "Mileage": "800 km",
+        "Power": "640 hp"
+      },
+      "isFeatured": true,
+      "created_at": "2026-06-11 05:46:26"
+    },
+    {
+      "id": "l5",
+      "type": "car",
+      "title": "McLaren Artura",
+      "brand": "McLaren",
+      "price": 285000,
+      "currency": "€",
+      "location": "Woking, UK",
+      "images": [
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l5/obsidian-penthouse-1",
+          "alt": "McLaren Artura",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l5/obsidian-penthouse-2",
+          "alt": "McLaren Artura",
+          "width": 1200,
+          "height": 800,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l5/obsidian-penthouse-3",
+          "alt": "McLaren Artura",
+          "width": 1200,
+          "height": 816,
+          "format": "jpg",
+          "loading": "auto"
+        },
+        {
+          "src": "https://res.cloudinary.com/dxsuhm8qv/image/upload/otulia/listings/l5/obsidian-penthouse-5",
+          "alt": "McLaren Artura",
+          "width": 1200,
+          "height": 1800,
+          "format": "jpg",
+          "loading": "auto"
+        }
+      ],
+      "specs": {
+        "Year": "2024",
+        "Mileage": "300 km",
+        "Power": "671 hp"
+      },
+      "isFeatured": false,
+      "created_at": "2026-06-11 05:46:26"
+    }
+  ]
+}

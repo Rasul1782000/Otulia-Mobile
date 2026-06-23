@@ -1,3 +1,4 @@
+
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Home, Compass, Plus, MessageSquare, User } from 'lucide-react-native';
 import { ViewState } from '../types';

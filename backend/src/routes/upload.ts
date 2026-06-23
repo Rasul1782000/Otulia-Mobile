@@ -1,42 +1,39 @@
 import { Router, Request, Response } from 'express';
+import cloudinary from '../lib/cloudinary.js';
 
 const router = Router();
 
 router.post('/image', async (req: Request, res: Response) => {
   try {
-    const { image, folder } = req.body;
+    const { image, folder, publicId } = req.body;
 
     if (!image) {
-      res.status(400).json({ success: false, message: 'Image data is required (base64).' });
+      res.status(400).json({ success: false, message: 'Image data is required (base64, URL, or file path).' });
       return;
     }
 
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const apiKey = process.env.CLOUDINARY_API_KEY;
-    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    const options: any = {
+      folder: folder || 'otulia_listings',
+      use_filename: true,
+      unique_filename: false,
+      overwrite: true,
+    };
 
-    if (!cloudName || !apiKey || !apiSecret) {
-      res.status(500).json({ success: false, message: 'Cloudinary not configured.' });
-      return;
+    if (publicId) {
+      options.public_id = publicId;
     }
 
-    const formData = new URLSearchParams();
-    formData.append('file', image);
-    formData.append('upload_preset', 'otulia_unsigned');
-    formData.append('folder', folder || 'otulia_listings');
+    const result = await cloudinary.uploader.upload(image, options);
 
-    const uploadRes = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body: formData }
-    );
-    const result: any = await uploadRes.json();
-
-    if (result.error) {
-      res.status(400).json({ success: false, message: result.error.message });
-      return;
-    }
-
-    res.json({ success: true, url: result.secure_url, publicId: result.public_id });
+    res.json({
+      success: true,
+      url: result.secure_url,
+      publicId: result.public_id,
+      format: result.format,
+      width: result.width,
+      height: result.height,
+      bytes: result.bytes,
+    });
   } catch (err: any) {
     console.error('[POST /upload/image]', err);
     res.status(500).json({ success: false, message: err.message || 'Upload failed.' });

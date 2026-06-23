@@ -18,3 +18,20 @@ View your app in AI Studio: https://ai.studio/apps/ce2f5135-1138-4563-be88-432e6
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+
+## Run on Android Emulator
+
+This project can also be launched with Expo on an Android emulator.
+
+1. Start the emulator manually if it is not already running:
+   `C:\Users\Rasul\AppData\Local\Android\Sdk\emulator\emulator @Medium_Phone_API_36.1`
+2. In the frontend folder, run:
+   `npm run android`
+
+If Expo reports that the emulator quit before opening, stop any stale emulator processes and restart adb:
+
+```powershell
+adb kill-server
+adb start-server
+emulator -avd Medium_Phone_API_36.1 -read-only
+```

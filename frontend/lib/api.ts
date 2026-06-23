@@ -1,15 +1,35 @@
 const getBaseUrl = (): string => {
-  if (typeof window !== 'undefined' && (window as any).__env__?.VITE_BACKEND_URL) {
-    return (window as any).__env__.VITE_BACKEND_URL;
-  }
+  const DEFAULT = 'http://10.0.2.2:5001';
+
+  // 1. Vite dev server (process.env injected by vite.config.ts)
   try {
-    if (import.meta.env?.VITE_BACKEND_URL) {
-      return import.meta.env.VITE_BACKEND_URL;
+    if (typeof process !== 'undefined' && process.env?.VITE_BACKEND_URL) {
+      return process.env.VITE_BACKEND_URL;
     }
-  } catch {
-    // import.meta not available (e.g., server-side rendering)
-  }
-  return '';
+  } catch {}
+
+  // 2. Expo (process.env.EXPO_PUBLIC_* exposed by Metro)
+  try {
+    if (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_BACKEND_URL) {
+      return process.env.EXPO_PUBLIC_BACKEND_URL;
+    }
+  } catch {}
+
+  // 3. import.meta.env (Vite only)
+  try {
+    if ((import.meta as any)?.env?.VITE_BACKEND_URL) {
+      return (import.meta as any).env.VITE_BACKEND_URL;
+    }
+  } catch {}
+
+  // 4. window.__env__ (custom injection)
+  try {
+    if (typeof window !== 'undefined' && (window as any).__env__?.VITE_BACKEND_URL) {
+      return (window as any).__env__.VITE_BACKEND_URL;
+    }
+  } catch {}
+
+  return DEFAULT;
 };
 
 const BASE_URL: string = getBaseUrl();
@@ -18,6 +38,7 @@ let authToken: string | null = null;
 
 export function setAuthToken(token: string | null) {
   authToken = token;
+  console.log(`[API] Auth token ${token ? 'set' : 'cleared'}`);
 }
 
 export function getAuthToken(): string | null {
@@ -25,53 +46,91 @@ export function getAuthToken(): string | null {
 }
 
 function getHeaders(): Record<string, string> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  };
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
   return headers;
+}
+
+async function handleResponse<T>(response: Response, url: string): Promise<T> {
+  console.log(`[API] Response: ${response.status} ${response.statusText} | URL: ${url}`);
+  console.log(`[API] Headers:`, Object.fromEntries(response.headers.entries()));
+
+  const text = await response.text();
+  console.log(`[API] Body (first 500 chars):`, text.slice(0, 500));
+
+  if (!response.ok) {
+    let parsed: any;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = null;
+    }
+    const errorMsg = parsed?.message || `HTTP ${response.status}: ${response.statusText}`;
+    console.error(`[API] Request failed:`, { url, status: response.status, message: errorMsg, body: parsed });
+    throw new Error(errorMsg);
+  }
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    console.warn(`[API] Response is not JSON, returning raw text`);
+    return text as unknown as T;
+  }
 }
 
 async function get<T>(path: string): Promise<T> {
   const url = `${BASE_URL}${path}`;
   console.log(`[API] GET ${url}`);
-  const response = await fetch(url, { headers: getHeaders() });
-  
-  if (!response.ok) {
-    const text = await response.text();
-    console.error(`[API] GET ${url} failed with status ${response.status}:`, text.slice(0, 200));
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      throw new Error(`Request failed with status ${response.status}. See console for details.`);
+  console.log(`[API] Headers:`, getHeaders());
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return await handleResponse<T>(response, url);
+  } catch (err: any) {
+    if (err.message === 'Failed to fetch' || err.message?.includes('NetworkError') || err.message?.includes('CORS')) {
+      console.error(`[API] Network/CORS error on GET ${url}:`, err.message);
+      console.error(`[API] Full error object:`, err);
+      throw new Error(`Network error: Cannot reach server at ${BASE_URL}. Is the backend running?`);
     }
-    throw new Error(data.message || `Request failed: ${response.statusText}`);
+    console.error(`[API] GET ${url} threw:`, err);
+    throw err;
   }
-  
-  return await response.json() as T;
 }
 
 async function post<T>(path: string, body: Record<string, any>): Promise<T> {
   const url = `${BASE_URL}${path}`;
+  const safeBody = { ...body };
+  if (safeBody.password) safeBody.password = '***';
+  if (safeBody.confirmPassword) safeBody.confirmPassword = '***';
+
   console.log(`[API] POST ${url}`);
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify(body),
-  });
+  console.log(`[API] Request body (redacted):`, safeBody);
+  console.log(`[API] Headers:`, getHeaders());
 
-  if (!response.ok) {
-    const text = await response.text();
-    console.error(`[API] POST ${url} failed with status ${response.status}:`, text.slice(0, 200));
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      throw new Error(`Request failed with status ${response.status}. See console for details.`);
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return await handleResponse<T>(response, url);
+  } catch (err: any) {
+    if (err.message === 'Failed to fetch' || err.message?.includes('NetworkError') || err.message?.includes('CORS')) {
+      console.error(`[API] Network/CORS error on POST ${url}:`, err.message);
+      console.error(`[API] Full error object:`, err);
+      throw new Error(`Network error: Cannot reach server at ${BASE_URL}. Is the backend running?`);
     }
-    throw new Error(data.message || `Request failed: ${response.statusText}`);
+    console.error(`[API] POST ${url} threw:`, err);
+    throw err;
   }
-
-  return await response.json() as T;
 }
 
 // ─── Health ─────────────────────────────────────────────
@@ -119,6 +178,46 @@ export async function uploadImage(body: { image: string; folder?: string }): Pro
   return post('/api/upload/image', body);
 }
 
+// ─── Listings ────────────────────────────────────────────
+export async function getListings(limit: number = 5): Promise<{ success: boolean; listings: any[] }> {
+  const params = `?limit=${limit}`;
+  return get(`/api/listings${params}`);
+}
+
+export async function getFeaturedListings(limit: number = 5): Promise<{ success: boolean; listings: any[] }> {
+  const params = `?limit=${limit}`;
+  return get(`/api/listings/featured${params}`);
+}
+
+export async function getListingsByType(type: string, limit: number = 5, page: number = 1): Promise<{ success: boolean; listings: any[] }> {
+  const qs: string[] = [];
+  if (limit) qs.push(`limit=${limit}`);
+  if (page) qs.push(`page=${page}`);
+  const params = qs.length ? `?${qs.join('&')}` : '';
+  return get(`/api/listings/type/${type}${params}`);
+}
+
+export async function getBrandsByType(type: string): Promise<{ success: boolean; brands: string[] }> {
+  return get(`/api/listings/brands/${type}`);
+}
+
+export async function getListingById(id: string): Promise<{ success: boolean; listing: any }> {
+  return get(`/api/listings/${id}`);
+}
+
+export async function createListing(body: Record<string, any>): Promise<any> {
+  return post('/api/listings', body);
+}
+
+export async function syncListings(): Promise<{ success: boolean; message: string }> {
+  return post('/api/listings/sync', {});
+}
+
+export async function getCloudinaryResources(prefix?: string): Promise<{ success: boolean; totalImages?: number; folders?: Record<string, any[]>; count?: number; images?: any[] }> {
+  const path = prefix ? `/api/listings/cloudinary/${encodeURIComponent(prefix)}` : '/api/listings/cloudinary';
+  return get(path);
+}
+
 export async function request<T>(path: string): Promise<T> {
   return get<T>(path);
 }
@@ -136,5 +235,13 @@ export const apiClient = {
   createPayPalOrder,
   capturePayPalOrder,
   uploadImage,
+  getListings,
+  getFeaturedListings,
+  getListingsByType,
+  getBrandsByType,
+  getListingById,
+  createListing,
+  syncListings,
+  getCloudinaryResources,
   request,
 };

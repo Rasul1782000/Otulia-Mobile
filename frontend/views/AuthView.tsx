@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native';
 import { EyeOff, Eye, User as UserIcon } from 'lucide-react-native';
 import { ViewState } from '../types';
-import { colors } from '../theme';
+import { useTheme, colors } from '../theme';
 import Svg, { Rect, Path } from 'react-native-svg';
 import tw from 'twrnc';
 import { login, register, googleLogin, setAuthToken } from '../lib/api';
@@ -61,79 +61,76 @@ interface AuthViewProps {
 }
 
 export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
+  const { isDark } = useTheme();
+  const bg = isDark ? colors.dark.bg : colors.light.bg;
+  const surface = isDark ? colors.dark.surface : colors.light.surface;
+  const border = isDark ? colors.dark.border : colors.light.border;
+  const text = isDark ? colors.dark.text : colors.light.text;
+  const textMuted = isDark ? colors.dark.textMuted : colors.light.textMuted;
+  const inputBg = isDark ? colors.dark.input : colors.light.input;
+
   const [activeTab, setActiveTab] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
 
-  // Form states
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+
+  useEffect(() => {
+    setMessage(null);
+  }, [activeTab]);
+
+  function showFeedback(type: 'error' | 'success', text: string) {
+    setMessage({ type, text });
+    if (Platform.OS !== 'web') {
+      Alert.alert(type === 'error' ? 'Error' : 'Success', text, [{ text: 'OK' }], { cancelable: true });
+    }
+  }
 
   const handleAppleLogin = async () => {
     setMessage(null);
     try {
-      const appleClientId = import.meta.env.VITE_APPLE_CLIENT_ID;
-      if (!appleClientId) {
-        setMessage({ type: 'error', text: 'Apple login is not configured.' });
-        return;
-      }
-      setMessage({ type: 'success', text: 'Apple sign-in coming soon.' });
+      const appleClientId = import.meta.env?.VITE_APPLE_CLIENT_ID;
+      if (!appleClientId) { showFeedback('error', 'Apple login is not configured.'); return; }
+      showFeedback('success', 'Apple sign-in coming soon.');
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Apple login failed.' });
+      showFeedback('error', err.message || 'Apple login failed.');
     }
   };
 
   const handleFacebookLogin = async () => {
     setMessage(null);
     try {
-      const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID;
-      if (!facebookAppId) {
-        setMessage({ type: 'error', text: 'Facebook login is not configured.' });
-        return;
-      }
-      setMessage({ type: 'success', text: 'Facebook sign-in coming soon.' });
+      const facebookAppId = import.meta.env?.VITE_FACEBOOK_APP_ID;
+      if (!facebookAppId) { showFeedback('error', 'Facebook login is not configured.'); return; }
+      showFeedback('success', 'Facebook sign-in coming soon.');
     } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Facebook login failed.' });
+      showFeedback('error', err.message || 'Facebook login failed.');
     }
   };
 
   const handleGoogleLogin = async () => {
     setMessage(null);
     setLoading(true);
+    const payload = { email: email.trim(), full_name: fullName.trim() || 'Google User', googleId: 'google_' + Date.now() };
     try {
-      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-      if (!googleClientId) {
-        setMessage({ type: 'error', text: 'Google login is not configured.' });
-        setLoading(false);
-        return;
-      }
-      const response = await googleLogin({
-        email: email.trim() || 'google.user@example.com',
-        full_name: fullName.trim() || 'Google User',
-        googleId: 'google_' + Date.now(),
-      });
+      const googleClientId = import.meta.env?.VITE_GOOGLE_CLIENT_ID;
+      if (!googleClientId) { showFeedback('error', 'Google login is not configured.'); setLoading(false); return; }
+      const response = await googleLogin(payload);
       if (response.success) {
         if (response.token) setAuthToken(response.token);
-        if (onLoginSuccess) {
-          onLoginSuccess({
-            id: String(response.user.id),
-            name: response.user.full_name,
-            email: response.user.email,
-            avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256',
-            isVerified: true,
-            type: 'buyer',
-          });
-        }
-        setMessage({ type: 'success', text: 'Signed in with Google.' });
+        if (onLoginSuccess) onLoginSuccess({ id: String(response.user.id), name: response.user.full_name, email: response.user.email, avatar: '', isVerified: true, type: 'buyer' });
+        showFeedback('success', 'Signed in with Google.');
         setTimeout(() => onViewChange('home'), 600);
       } else {
-        setMessage({ type: 'error', text: response.message || 'Google login failed.' });
+        showFeedback('error', response.message || 'Google login failed.');
       }
     } catch (err: any) {
-      console.error(err);
-      setMessage({ type: 'error', text: err.message || 'Google login failed.' });
+      showFeedback('error', err.message || 'Google login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -141,72 +138,36 @@ export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
 
   const handleSubmit = async () => {
     setMessage(null);
-    if (activeTab === 'signup' && !fullName.trim()) {
-      setMessage({ type: 'error', text: 'Full name is required.' });
-      return;
-    }
-    if (!email.trim() || !password.trim()) {
-      setMessage({ type: 'error', text: 'Email and password are required.' });
-      return;
-    }
+    if (activeTab === 'signup' && !fullName.trim()) { showFeedback('error', 'Full name is required.'); return; }
+    if (!email.trim() || !password.trim()) { showFeedback('error', 'Email and password are required.'); return; }
+    if (password.length < 8) { showFeedback('error', 'Password must be at least 8 characters.'); return; }
+    if (activeTab === 'signup' && password !== confirmPassword) { showFeedback('error', 'Passwords do not match.'); return; }
 
     setLoading(true);
     try {
       if (activeTab === 'signin') {
         const response = await login({ email: email.trim(), password: password.trim() });
         if (response.success) {
-          setMessage({ type: 'success', text: response.message || 'Signed in successfully.' });
+          showFeedback('success', response.message || 'Login successful!');
           if (response.token) setAuthToken(response.token);
-          
-          if (onLoginSuccess) {
-            onLoginSuccess({
-              id: String(response.user.id),
-              name: response.user.full_name,
-              email: response.user.email,
-              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256',
-              isVerified: true,
-              type: 'buyer',
-            });
-          }
-          
-          setTimeout(() => {
-            onViewChange('home');
-          }, 600);
+          if (onLoginSuccess) onLoginSuccess({ id: String(response.user.id), name: response.user.full_name, email: response.user.email, avatar: '', isVerified: true, type: 'buyer' });
+          setTimeout(() => onViewChange('home'), 600);
         } else {
-          setMessage({ type: 'error', text: response.message || 'Login failed.' });
+          showFeedback('error', response.message || 'Login failed.');
         }
       } else {
-        const response = await register({
-          full_name: fullName.trim(),
-          email: email.trim(),
-          password: password.trim(),
-        });
-        
+        const response = await register({ full_name: fullName.trim(), email: email.trim(), password: password.trim(), confirmPassword: confirmPassword.trim() });
         if (response.success) {
-          setMessage({ type: 'success', text: 'Account created! Logging you in...' });
+          showFeedback('success', 'Account created! Logging you in...');
           if (response.token) setAuthToken(response.token);
-          
-          if (onLoginSuccess) {
-            onLoginSuccess({
-              id: String(response.user.id),
-              name: response.user.full_name,
-              email: response.user.email,
-              avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256',
-              isVerified: true,
-              type: 'buyer',
-            });
-          }
-          
-          setTimeout(() => {
-            onViewChange('home');
-          }, 600);
+          if (onLoginSuccess) onLoginSuccess({ id: String(response.user.id), name: response.user.full_name, email: response.user.email, avatar: '', isVerified: true, type: 'buyer' });
+          setTimeout(() => onViewChange('home'), 600);
         } else {
-          setMessage({ type: 'error', text: response.message || 'Registration failed.' });
+          showFeedback('error', response.message || 'Registration failed.');
         }
       }
     } catch (err: any) {
-      console.error(err);
-      setMessage({ type: 'error', text: err.message || 'An error occurred. Please try again.' });
+      showFeedback('error', err.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -217,35 +178,28 @@ export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
       style={tw`flex-1`}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Full-screen background */}
       <View style={[StyleSheet.absoluteFill]}>
         <Image
           source={{ uri: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=800' }}
           style={tw`w-full h-full`}
           resizeMode="cover"
         />
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255,255,255,0.55)' }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? 'rgba(10,10,12,0.75)' : 'rgba(255,255,255,0.55)' }]} />
       </View>
 
-      {/* Centered scroll content */}
       <ScrollView
         style={tw`flex-1`}
         contentContainerStyle={tw`flex-grow justify-center px-5 py-8`}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Card */}
-        <View style={[tw`bg-white rounded-3xl shadow-2xl`, { elevation: 24, padding: 20 }]}>
+        <View style={[tw`rounded-3xl shadow-2xl`, { elevation: 24, padding: 20, backgroundColor: isDark ? 'rgba(20,21,24,0.95)' : 'rgba(255,255,255,0.95)' }]}>
 
-          {/* Logo inside card */}
+          {/* Logo */}
           <View style={tw`items-center mb-4`}>
-            <Image
-              source={require('../images/assets/Otulia logo.jpeg')}
-              style={tw`w-14 h-14 mb-1`}
-              resizeMode="contain"
-            />
-            <Text style={[tw`text-xl font-black`, { letterSpacing: 7, color: '#000000' }]}>OTULIA</Text>
-            <Text style={[tw`text-[8px] font-black mt-0.5`, { letterSpacing: 2.5, color: '#000000', fontWeight: '900' }]}>ALL IN ONE LUXURY MARKETPLACE</Text>
+            <Image source={require('../images/assets/Otulia logo.jpeg')} style={tw`w-14 h-14 mb-1`} resizeMode="contain" />
+            <Text style={[tw`text-xl font-black`, { letterSpacing: 7, color: text }]}>OTULIA</Text>
+            <Text style={[tw`text-[8px] font-black mt-0.5`, { letterSpacing: 2.5, color: textMuted }]}>ALL IN ONE LUXURY MARKETPLACE</Text>
           </View>
 
           {/* Message Banner */}
@@ -253,17 +207,11 @@ export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
             <View style={[
               tw`p-3 rounded-xl mb-4 border flex-row items-center gap-2`,
               message.type === 'error' 
-                ? { backgroundColor: '#fef2f2', borderColor: '#fee2e2' }
-                : { backgroundColor: '#f0fdf4', borderColor: '#dcfce7' }
+                ? { backgroundColor: isDark ? 'rgba(239,68,68,0.1)' : '#fef2f2', borderColor: isDark ? 'rgba(239,68,68,0.3)' : '#fee2e2' }
+                : { backgroundColor: isDark ? 'rgba(34,197,94,0.1)' : '#f0fdf4', borderColor: isDark ? 'rgba(34,197,94,0.3)' : '#dcfce7' }
             ]}>
-              <View style={[
-                tw`w-2 h-2 rounded-full`, 
-                message.type === 'error' ? { backgroundColor: '#ef4444' } : { backgroundColor: '#22c55e' }
-              ]} />
-              <Text style={[
-                tw`text-[10px] font-black flex-1`, 
-                message.type === 'error' ? { color: '#991b1b' } : { color: '#166534' }
-              ]}>
+              <View style={[tw`w-2 h-2 rounded-full`, message.type === 'error' ? { backgroundColor: '#ef4444' } : { backgroundColor: '#22c55e' }]} />
+              <Text style={[tw`text-[10px] font-black flex-1`, message.type === 'error' ? { color: '#ef4444' } : { color: '#22c55e' }]}>
                 {message.text}
               </Text>
             </View>
@@ -271,108 +219,123 @@ export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
 
           {/* Tabs */}
           <View style={tw`flex-row mb-4 relative`}>
-            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => { setActiveTab('signin'); setMessage(null); }}>
-              <Text style={[tw`text-sm font-black`, activeTab === 'signin' ? { color: '#18181b' } : { color: '#a1a1aa' }]}>Sign In</Text>
+            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => setActiveTab('signin')}>
+              <Text style={[tw`text-sm font-black`, activeTab === 'signin' ? { color: colors.gold } : { color: textMuted }]}>Sign In</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => { setActiveTab('signup'); setMessage(null); }}>
-              <Text style={[tw`text-sm font-black`, activeTab === 'signup' ? { color: '#18181b' } : { color: '#a1a1aa' }]}>Sign Up</Text>
+            <TouchableOpacity style={tw`flex-1 pb-2.5 items-center`} onPress={() => { setActiveTab('signup'); setConfirmPassword(''); }}>
+              <Text style={[tw`text-sm font-black`, activeTab === 'signup' ? { color: colors.gold } : { color: textMuted }]}>Sign Up</Text>
             </TouchableOpacity>
-            <View style={[tw`absolute bottom-0 left-0 right-0 h-[1px]`, { backgroundColor: '#f4f4f5' }]} />
+            <View style={[tw`absolute bottom-0 left-0 right-0 h-[1px]`, { backgroundColor: border }]} />
             <View style={[tw`absolute bottom-0 w-1/2 h-[2px]`, { backgroundColor: colors.gold }, activeTab === 'signup' ? { left: '50%' } : { left: 0 }]} />
           </View>
 
           {activeTab === 'signup' && (
             <>
-              <Text style={tw`text-[10px] font-black text-zinc-900 mb-1.5`}>Full Name</Text>
-              <View style={tw`flex-row items-center border border-zinc-100 rounded-xl px-3 py-2.5 gap-2 bg-zinc-50 mb-3`}>
-                <UserIcon size={14} color="#a1a1aa" />
+              <Text style={[tw`text-[10px] font-black mb-1.5`, { color: text }]}>Full Name</Text>
+              <View style={[tw`flex-row items-center rounded-xl px-3 py-2.5 gap-2 mb-3`, { backgroundColor: inputBg, borderWidth: 1, borderColor: border }]}>
+                <UserIcon size={14} color={textMuted} />
                 <TextInput
                   placeholder="Enter your full name"
-                  placeholderTextColor="#a1a1aa"
+                  placeholderTextColor={textMuted}
                   value={fullName}
                   onChangeText={setFullName}
-                  style={tw`flex-1 text-xs text-zinc-900 font-black`}
+                  style={[tw`flex-1 text-xs font-black`, { color: text }]}
                   autoCapitalize="words"
                 />
               </View>
             </>
           )}
 
-          {/* Email */}
-          <Text style={tw`text-[10px] font-black text-zinc-900 mb-1.5`}>Email Address</Text>
-          <View style={tw`flex-row items-center border border-zinc-100 rounded-xl px-3 py-2.5 gap-2 bg-zinc-50`}>
-            <MailIcon size={14} />
+          <Text style={[tw`text-[10px] font-black mb-1.5`, { color: text }]}>Email Address</Text>
+          <View style={[tw`flex-row items-center rounded-xl px-3 py-2.5 gap-2`, { backgroundColor: inputBg, borderWidth: 1, borderColor: border }]}>
+            <MailIcon size={14} color={textMuted} />
             <TextInput
               placeholder="Enter your email"
-              placeholderTextColor="#a1a1aa"
+              placeholderTextColor={textMuted}
               value={email}
               onChangeText={setEmail}
-              style={tw`flex-1 text-xs text-zinc-900 font-black`}
+              style={[tw`flex-1 text-xs font-black`, { color: text }]}
               keyboardType="email-address"
               autoCapitalize="none"
             />
           </View>
 
-          {/* Password */}
-          <Text style={tw`text-[10px] font-black text-zinc-900 mb-1.5 mt-3`}>Password</Text>
-          <View style={tw`flex-row items-center border border-zinc-100 rounded-xl px-3 py-2.5 gap-2 bg-zinc-50`}>
-            <LockIcon size={14} />
+          <Text style={[tw`text-[10px] font-black mb-1.5 mt-3`, { color: text }]}>Password</Text>
+          <View style={[tw`flex-row items-center rounded-xl px-3 py-2.5 gap-2`, { backgroundColor: inputBg, borderWidth: 1, borderColor: border }]}>
+            <LockIcon size={14} color={textMuted} />
             <TextInput
               placeholder="Enter your password"
-              placeholderTextColor="#a1a1aa"
+              placeholderTextColor={textMuted}
               value={password}
               onChangeText={setPassword}
-              style={tw`flex-1 text-xs text-zinc-900 font-black`}
+              style={[tw`flex-1 text-xs font-black`, { color: text }]}
               secureTextEntry={!showPassword}
             />
             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              {showPassword ? <Eye size={14} color="#a1a1aa" /> : <EyeOff size={14} color="#a1a1aa" />}
+              {showPassword ? <Eye size={14} color={textMuted} /> : <EyeOff size={14} color={textMuted} />}
             </TouchableOpacity>
           </View>
 
+          {activeTab === 'signup' && (
+            <>
+              <Text style={[tw`text-[10px] font-black mb-1.5 mt-3`, { color: text }]}>Confirm Password</Text>
+              <View style={[tw`flex-row items-center rounded-xl px-3 py-2.5 gap-2`, { backgroundColor: inputBg, borderWidth: 1, borderColor: border }]}>
+                <LockIcon size={14} color={textMuted} />
+                <TextInput
+                  placeholder="Confirm your password"
+                  placeholderTextColor={textMuted}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  style={[tw`flex-1 text-xs font-black`, { color: text }]}
+                  secureTextEntry={!showConfirmPassword}
+                />
+                <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+                  {showConfirmPassword ? <Eye size={14} color={textMuted} /> : <EyeOff size={14} color={textMuted} />}
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
           {activeTab === 'signin' && (
             <TouchableOpacity style={tw`self-end mt-2`}>
-              <Text style={tw`text-[10px] font-black text-zinc-900 underline`}>Forgot Password?</Text>
+              <Text style={[tw`text-[10px] font-black underline`, { color: text }]}>Forgot Password?</Text>
             </TouchableOpacity>
           )}
 
-          {/* Submit */}
           <TouchableOpacity
-            style={[tw`rounded-xl py-3 items-center mt-4 shadow-md flex-row justify-center gap-2`, { backgroundColor: '#111113' }]}
+            style={[tw`rounded-xl py-3 items-center mt-4 shadow-md flex-row justify-center gap-2`, { backgroundColor: colors.gold }]}
             onPress={handleSubmit}
             disabled={loading}
           >
             {loading && <ActivityIndicator size="small" color="#ffffff" />}
             <Text style={tw`text-white text-sm font-black`}>
-              {activeTab === 'signin' ? 'Sign In' : 'Create Account'}
+              {loading ? 'Please wait...' : activeTab === 'signin' ? 'Sign In' : 'Create Account'}
             </Text>
           </TouchableOpacity>
 
-          {/* Divider */}
           <View style={tw`flex-row items-center my-4`}>
-            <View style={tw`flex-1 h-[1px] bg-zinc-100`} />
-            <Text style={tw`text-[9px] text-zinc-400 px-3 font-black`}>or continue with</Text>
-            <View style={tw`flex-1 h-[1px] bg-zinc-100`} />
+            <View style={[tw`flex-1 h-[1px]`, { backgroundColor: border }]} />
+            <Text style={[tw`text-[9px] px-3 font-black`, { color: textMuted }]}>or continue with</Text>
+            <View style={[tw`flex-1 h-[1px]`, { backgroundColor: border }]} />
           </View>
 
-          {/* Social */}
           <View style={tw`flex-row justify-center gap-3`}>
-            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`} onPress={handleGoogleLogin} disabled={loading}>
+            <TouchableOpacity style={[tw`w-11 h-11 rounded-full items-center justify-center`, { backgroundColor: surface, borderWidth: 1, borderColor: border }]} onPress={handleGoogleLogin} disabled={loading}>
               <GoogleIcon size={16} />
             </TouchableOpacity>
-            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`} onPress={handleAppleLogin} disabled={loading}>
-              <AppleIcon size={17} />
+            <TouchableOpacity style={[tw`w-11 h-11 rounded-full items-center justify-center`, { backgroundColor: surface, borderWidth: 1, borderColor: border }]} onPress={handleAppleLogin} disabled={loading}>
+              <AppleIcon size={17} color={isDark ? '#ffffff' : '#000000'} />
             </TouchableOpacity>
-            <TouchableOpacity style={tw`w-11 h-11 rounded-full border border-zinc-100 items-center justify-center bg-white shadow-sm`} onPress={handleFacebookLogin} disabled={loading}>
+            <TouchableOpacity style={[tw`w-11 h-11 rounded-full items-center justify-center`, { backgroundColor: surface, borderWidth: 1, borderColor: border }]} onPress={handleFacebookLogin} disabled={loading}>
               <FacebookIcon size={17} />
             </TouchableOpacity>
           </View>
 
           {activeTab === 'signup' && (
-            <Text style={tw`text-[8px] text-zinc-400 text-center mt-4 font-black px-4`}>
+            <Text style={[tw`text-[8px] text-center mt-4 font-black px-4`, { color: textMuted }]}>
               By creating an account, you agree to our{' '}
-              <Text style={tw`text-zinc-600 underline`}>Terms of Service</Text> and{' '}
-              <Text style={tw`text-zinc-600 underline`}>Privacy Policy</Text>.
+              <Text style={[tw`underline`, { color: text }]}>Terms of Service</Text> and{' '}
+              <Text style={[tw`underline`, { color: text }]}>Privacy Policy</Text>.
             </Text>
           )}
         </View>
@@ -380,4 +343,3 @@ export function AuthView({ onViewChange, onLoginSuccess }: AuthViewProps) {
     </KeyboardAvoidingView>
   );
 }
-

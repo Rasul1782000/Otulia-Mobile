@@ -9,7 +9,7 @@ const WA_NUMBER: string = (() => {
       return import.meta.env.VITE_WHATSAPP_NUMBER;
     }
   } catch {}
-  return '+971501234567';
+  return '';
 })();
 
 export function openWhatsApp(message?: string, phone?: string): void {

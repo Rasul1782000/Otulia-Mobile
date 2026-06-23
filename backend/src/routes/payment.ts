@@ -1,8 +1,9 @@
 import { Router, Request, Response } from 'express';
+import { paymentLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 
-router.post('/create', async (req: Request, res: Response) => {
+router.post('/create', paymentLimiter, async (req: Request, res: Response) => {
   try {
     const { amount, currency, description } = req.body;
 
@@ -11,11 +12,17 @@ router.post('/create', async (req: Request, res: Response) => {
       return;
     }
 
-    const clientId = process.env.PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+    const numAmount = parseFloat(String(amount));
+    if (isNaN(numAmount) || numAmount <= 0) {
+      res.status(400).json({ success: false, message: 'Amount must be a positive number.' });
+      return;
+    }
+
+    const clientId = process.env.PAYPAL_CLIENT_ID || '';
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET || '';
 
     if (!clientId || !clientSecret) {
-      res.status(500).json({ success: false, message: 'PayPal not configured.' });
+      res.status(503).json({ success: false, message: 'PayPal not configured.' });
       return;
     }
 
@@ -54,7 +61,7 @@ router.post('/create', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/capture', async (req: Request, res: Response) => {
+router.post('/capture', paymentLimiter, async (req: Request, res: Response) => {
   try {
     const { orderId } = req.body;
     if (!orderId) {
@@ -62,8 +69,19 @@ router.post('/capture', async (req: Request, res: Response) => {
       return;
     }
 
-    const clientId = process.env.PAYPAL_CLIENT_ID;
-    const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
+    if (typeof orderId !== 'string' || orderId.trim().length === 0) {
+      res.status(400).json({ success: false, message: 'orderId must be a non-empty string.' });
+      return;
+    }
+
+    const clientId = process.env.PAYPAL_CLIENT_ID || '';
+    const clientSecret = process.env.PAYPAL_CLIENT_SECRET || '';
+
+    if (!clientId || !clientSecret) {
+      res.status(503).json({ success: false, message: 'PayPal not configured.' });
+      return;
+    }
+
     const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
     const tokenRes = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
@@ -76,6 +94,11 @@ router.post('/capture', async (req: Request, res: Response) => {
     });
     const tokenData: any = await tokenRes.json();
 
+    if (!tokenData.access_token) {
+      res.status(502).json({ success: false, message: 'Failed to obtain PayPal access token.' });
+      return;
+    }
+
     const captureRes = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`, {
       method: 'POST',
       headers: {
@@ -84,6 +107,12 @@ router.post('/capture', async (req: Request, res: Response) => {
       },
     });
     const capture: any = await captureRes.json();
+
+    if (!captureRes.ok || capture.error) {
+      const errMsg = capture.error?.message || capture.message || 'PayPal capture failed';
+      res.status(captureRes.status || 502).json({ success: false, message: errMsg, details: capture });
+      return;
+    }
 
     res.json({ success: true, capture });
   } catch (err: any) {

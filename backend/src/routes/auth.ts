@@ -2,20 +2,36 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import db from '../db.js';
+import { authenticate } from '../middleware/auth.js';
+import { authLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_dev_secret';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('[Auth] JWT_SECRET is not set. Authentication will fail.');
+}
 
 function generateToken(userId: number, email: string): string {
+  if (!JWT_SECRET) throw new Error('JWT_SECRET is not configured');
   return jwt.sign({ id: userId, email }, JWT_SECRET, { expiresIn: '7d' });
 }
 
-router.post('/register', async (req: Request, res: Response) => {
+router.post('/register', authLimiter, async (req: Request, res: Response) => {
   try {
-    const { full_name, email, password } = req.body;
+    const { full_name, email, password, confirmPassword } = req.body;
 
     if (!full_name || !email || !password) {
       res.status(400).json({ success: false, message: 'All fields are required.' });
+      return;
+    }
+
+    if (password.length < 8) {
+      res.status(400).json({ success: false, message: 'Password must be at least 8 characters.' });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      res.status(400).json({ success: false, message: 'Passwords do not match.' });
       return;
     }
 
@@ -46,7 +62,7 @@ router.post('/register', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/login', async (req: Request, res: Response) => {
+router.post('/login', authLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -74,7 +90,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      message: 'Signed in successfully.',
+      message: 'Login authenticated, done successfully!',
       token,
       user: {
         id: user.id,
@@ -128,7 +144,7 @@ router.post('/google', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/users', (_req: Request, res: Response) => {
+router.get('/users', authenticate, (_req: Request, res: Response) => {
   try {
     const users = db
       .prepare('SELECT id, full_name, email, created_at FROM users ORDER BY created_at DESC')

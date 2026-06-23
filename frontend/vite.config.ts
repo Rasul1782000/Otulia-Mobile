@@ -1,15 +1,39 @@
 import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import fs from 'fs';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, path.resolve(__dirname, 'env'), '');
+function loadEnvFile(filePath: string): Record<string, string> {
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const vars: Record<string, string> = {};
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      const eqIdx = trimmed.indexOf('=');
+      if (eqIdx === -1) continue;
+      vars[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
+    }
+    return vars;
+  } catch {
+    return {};
+  }
+}
+
+export default defineConfig(() => {
+  const env = loadEnvFile(path.resolve(__dirname, '..', '.env'));
+
+  const defines: Record<string, string> = {};
   for (const key in env) {
-    process.env[key] = env[key];
+    defines[`process.env.${key}`] = JSON.stringify(env[key]);
+    if (key.startsWith('VITE_') || key.startsWith('EXPO_PUBLIC_')) {
+      defines[`import.meta.env.${key}`] = JSON.stringify(env[key]);
+    }
   }
 
   return {
+    define: defines,
     plugins: [
       react(),
       tailwindcss(),
@@ -45,8 +69,8 @@ export default defineConfig(({ mode }) => {
       exclude: ['react-native-svg', 'lucide-react-native'],
     },
     server: {
-      hmr: process.env.DISABLE_HMR !== 'true',
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      hmr: env.DISABLE_HMR !== 'true',
+      watch: env.DISABLE_HMR === 'true' ? null : {},
       proxy: {
         '/api': {
           target: 'http://127.0.0.1:5001',
