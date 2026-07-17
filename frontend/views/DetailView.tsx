@@ -6,7 +6,7 @@ import { useTheme, colors } from '../theme';
 import { ImageGalleryModal } from '../components/ImageGalleryModal';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { openWhatsApp } from '../lib/whatsapp';
-import { getThumbnailUrl } from '../lib/cloudinary';
+import { getThumbnailUrl } from '../lib/images';
 import tw from 'twrnc';
 
 export function DetailView({ listing, onViewChange }: { listing: Listing, onViewChange: (v: ViewState) => void }) {

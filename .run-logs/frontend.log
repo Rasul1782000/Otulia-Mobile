@@ -1,0 +1,32 @@
+
+> react-frontend@0.0.0 dev
+> vite
+
+[2m5:27:57 PM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m Re-optimizing dependencies because lockfile has changed
+
+  [32m[1mVITE[22m v6.4.3[39m  [2mready in [0m[1m14932[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5173[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+Error: [31m  Failed to scan for dependencies from entries:
+  D:/Drive/Otulia-Mobile/frontend/index.html
+D:/Drive/Otulia-Mobile/frontend/android/build/reports/problems/problems-report.html
+
+  [39m[31mX [41;31m[[41;97mERROR[41;31m][0m [1mExpected "}" but found "||"[0m
+
+    views/AddListingView.tsx:74:33:
+[37m      74 │                     {isCompleted [32m||[37m isActive ? (
+         │                                  [32m~~[37m
+         ╵                                  [32m}[0m
+
+
+    at failureErrorWithLog (D:\Drive\Otulia-Mobile\frontend\node_modules\esbuild\lib\main.js:1467:15)
+    at D:\Drive\Otulia-Mobile\frontend\node_modules\esbuild\lib\main.js:926:25
+    at runOnEndCallbacks (D:\Drive\Otulia-Mobile\frontend\node_modules\esbuild\lib\main.js:1307:45)
+    at buildResponseToResult (D:\Drive\Otulia-Mobile\frontend\node_modules\esbuild\lib\main.js:924:7)
+    at D:\Drive\Otulia-Mobile\frontend\node_modules\esbuild\lib\main.js:936:9
+    at new Promise (<anonymous>)
+    at requestCallbacks.on-end (D:\Drive\Otulia-Mobile\frontend\node_modules\esbuild\lib\main.js:935:54)
+    at handleRequest (D:\Drive\Otulia-Mobile\frontend\node_modules\esbuild\lib\main.js:628:17)
+    at handleIncomingPacket (D:\Drive\Otulia-Mobile\frontend\node_modules\esbuild\lib\main.js:653:7)
+    at Socket.readFromStdout (D:\Drive\Otulia-Mobile\frontend\node_modules\esbuild\lib\main.js:581:7)

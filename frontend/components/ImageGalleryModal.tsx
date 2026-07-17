@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, Dimensions, Modal, StatusBar } from 'react-native';
 import { X } from 'lucide-react-native';
-import { getGalleryImageUrl } from '../lib/cloudinary';
-import { CloudinaryImage } from '../types';
+import { getGalleryImageUrl } from '../lib/images';
+import { ListingImage } from '../types';
 import { OptimizedImage } from './OptimizedImage';
 import tw from 'twrnc';
 
@@ -10,7 +10,7 @@ const { width, height } = Dimensions.get('window');
 
 interface ImageGalleryModalProps {
   visible: boolean;
-  images: CloudinaryImage[];
+  images: ListingImage[];
   initialIndex: number;
   onClose: () => void;
 }
@@ -27,7 +27,7 @@ export function ImageGalleryModal({ visible, images, initialIndex, onClose }: Im
 
   const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
-  const renderItem = ({ item }: { item: CloudinaryImage }) => (
+  const renderItem = ({ item }: { item: ListingImage }) => (
     <View style={[tw`items-center justify-center`, { width, height }]}>
       <OptimizedImage
         src={getGalleryImageUrl(item.src)}

@@ -35,7 +35,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
       return;
     }
 
-    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    const existing = db.prepare('SELECT id FROM users WHERE LOWER(email) = LOWER(?)').get(email);
     if (existing) {
       res.status(409).json({ success: false, message: 'An account with this email already exists.' });
       return;
@@ -72,7 +72,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
     }
 
     const user = db
-      .prepare('SELECT id, full_name, email, password, created_at FROM users WHERE email = ?')
+      .prepare('SELECT id, full_name, email, password, created_at FROM users WHERE LOWER(email) = LOWER(?)')
       .get(email) as { id: number; full_name: string; email: string; password: string; created_at: string } | undefined;
 
     if (!user) {
@@ -115,7 +115,7 @@ router.post('/google', async (req: Request, res: Response) => {
     }
 
     let user = db
-      .prepare('SELECT id, full_name, email, created_at FROM users WHERE email = ?')
+      .prepare('SELECT id, full_name, email, created_at FROM users WHERE LOWER(email) = LOWER(?)')
       .get(email) as { id: number; full_name: string; email: string; created_at: string } | undefined;
 
     if (!user) {

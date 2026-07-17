@@ -1,6 +1,6 @@
 export type ViewState = 'auth' | 'home' | 'explore' | 'detail' | 'inbox' | 'profile' | 'add-listing' | 'settings';
 
-export interface CloudinaryImage {
+export interface ListingImage {
   src: string;
   alt: string;
   width: number;
@@ -13,7 +13,7 @@ export interface Category {
   id: string;
   name: string;
   subtitle: string;
-  image: string;
+  image: string | number;
   type?: Listing['type'];
 }
 
@@ -26,7 +26,7 @@ export interface Listing {
   price: number;
   currency: string;
   location: string;
-  images: CloudinaryImage[];
+  images: ListingImage[];
   specs: Record<string, string>;
   isFeatured?: boolean;
   dealerId?: string;

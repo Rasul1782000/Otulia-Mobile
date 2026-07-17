@@ -51,8 +51,27 @@ module.exports = {
     web: {
       favicon: './images/assets/Otulia logo.jpeg',
     },
-    extra: Object.fromEntries(
-      Object.entries(env).filter(([k]) => k.startsWith('VITE_') || k.startsWith('EXPO_PUBLIC_'))
-    ),
+    extra: {
+      ...Object.fromEntries(
+        Object.entries(env).filter(([k]) => k.startsWith('VITE_') || k.startsWith('EXPO_PUBLIC_'))
+      ),
+      eas: {
+        projectId: '4301688c-c965-4f2e-9954-b3e307146035',
+      },
+    },
+    plugins: [
+      'expo-dev-client',
+      [
+        'expo-build-properties',
+        {
+          android: {
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            buildToolsVersion: '35.0.0',
+            kotlinVersion: '2.0.21',
+          },
+        },
+      ],
+    ],
   },
 };

@@ -4,7 +4,7 @@ import { Bell, Menu, Search, SlidersHorizontal, Heart } from 'lucide-react-nativ
 import { categories } from '../data';
 import { ViewState, Listing } from '../types';
 import { useTheme, colors } from '../theme';
-import { getCategoryImageUrl, getHeroImageUrl } from '../lib/cloudinary';
+import { getCategoryImageUrl, getHeroImageUrl } from '../lib/images';
 import { getFeaturedListings, getListingsByType } from '../lib/api';
 import { OptimizedImage } from '../components/OptimizedImage';
 import tw from 'twrnc';
@@ -134,16 +134,26 @@ export function HomeView({ onViewChange, onListingClick, onCategorySelect }: { o
           Extraordinary choices. Exceptional lifestyle.
         </Text>
 
-        {/* Hero Image */}
-        <View style={tw`w-full h-56 rounded-[24px] overflow-hidden relative mb-8`}>
-          <OptimizedImage
-            src={getHeroImageUrl('otulia/hero-luxury-marketplace')}
-            alt="Otulia luxury marketplace"
-            priority="high"
-            resizeMode="cover"
-            style={tw`w-full h-full`}
-          />
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.25)' }]} />
+        {/* Hero Showcase Carousel */}
+        <View style={tw`mb-8 -mx-6`}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={tw`px-6 gap-4`}
+            snapToInterval={336} /* 320px width + 16px gap */
+            decelerationRate="fast"
+          >
+            {categories.map((cat, idx) => (
+              <View key={`showcase-${idx}`} style={tw`w-[320px] h-56 rounded-[24px] overflow-hidden relative`}>
+                {typeof cat.image === 'number' ? (
+                  <Image source={cat.image} style={tw`w-full h-full`} resizeMode="cover" />
+                ) : (
+                  <OptimizedImage src={getCategoryImageUrl(cat.image)} style={tw`w-full h-full`} resizeMode="cover" priority="high" />
+                )}
+                <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.1)' }]} />
+              </View>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Search */}
@@ -181,13 +191,21 @@ export function HomeView({ onViewChange, onListingClick, onCategorySelect }: { o
                 onViewChange('explore');
               }}
             >
-              <OptimizedImage
-                src={getCategoryImageUrl(cat.image)}
-                alt={cat.name}
-                priority="low"
-                resizeMode="cover"
-                style={tw`absolute inset-0 w-full h-full`}
-              />
+              {typeof cat.image === 'number' ? (
+                <Image
+                  source={cat.image}
+                  style={tw`absolute inset-0 w-full h-full`}
+                  resizeMode="cover"
+                />
+              ) : (
+                <OptimizedImage
+                  src={getCategoryImageUrl(cat.image)}
+                  alt={cat.name}
+                  priority="low"
+                  resizeMode="cover"
+                  style={tw`absolute inset-0 w-full h-full`}
+                />
+              )}
               <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.35)' }]} />
               <View style={tw`absolute inset-0 p-4 justify-end`}>
                 <Text style={tw`text-sm font-bold text-white tracking-wider mb-1 uppercase`}>{cat.name}</Text>
@@ -206,30 +224,6 @@ export function HomeView({ onViewChange, onListingClick, onCategorySelect }: { o
 
       {/* Cars Section */}
       {renderSection('Cars', 'Premium vehicles', carListings, 'car')}
-
-      {/* List Your Luxury Banner */}
-      <View style={tw`px-6 mt-6 mb-10`}>
-        <TouchableOpacity 
-          style={tw`relative w-full h-36 rounded-3xl overflow-hidden flex-row items-center`}
-          onPress={() => onViewChange('add-listing')}
-        >
-          <OptimizedImage
-            src={getHeroImageUrl('otulia/banner-list-your-luxury')}
-            alt="List your luxury"
-            priority="low"
-            resizeMode="cover"
-            style={tw`absolute inset-0 w-full h-full`}
-          />
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)' }]} />
-          <View style={tw`relative z-10 px-6`}>
-            <Text style={[tw`text-xl font-bold mb-1`, { color: colors.gold, fontFamily: 'Playfair Display, serif' }]}>List your luxury.</Text>
-            <Text style={tw`text-sm font-medium text-white mb-4`}>Reach the right audience.</Text>
-            <View style={[tw`py-2 px-5 rounded-full self-start`, { backgroundColor: colors.gold }]}>
-              <Text style={tw`text-white text-xs font-bold uppercase tracking-widest`}>Get Started</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </View>
     </ScrollView>
   );
 }

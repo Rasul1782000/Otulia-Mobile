@@ -5,14 +5,11 @@ import emailRouter from "./routes/email.js";
 import paymentRouter from "./routes/payment.js";
 import uploadRouter from "./routes/upload.js";
 import listingsRouter from "./routes/listings.js";
-import cloudinary from "./lib/cloudinary.js";
+import path from "path";
 import "./db.js";
 
 const requiredEnvVars = [
   'JWT_SECRET',
-  'CLOUDINARY_CLOUD_NAME',
-  'CLOUDINARY_API_KEY',
-  'CLOUDINARY_API_SECRET',
 ];
 
 const missing = requiredEnvVars.filter(v => !process.env[v]);
@@ -29,17 +26,10 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: "50mb" }));
 
+app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads")));
+
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", message: "Backend is running" });
-});
-
-app.get("/api/cloudinary/health", async (_req, res) => {
-  try {
-    const result = await cloudinary.api.ping();
-    res.json({ status: "ok", cloudinary: true, message: "Cloudinary connected", ping: result });
-  } catch (err: any) {
-    res.status(500).json({ status: "error", cloudinary: false, message: err.message || "Cloudinary connection failed" });
-  }
 });
 
 app.use("/api/auth", authRouter);

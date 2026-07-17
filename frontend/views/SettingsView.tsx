@@ -5,6 +5,22 @@ import { ViewState } from '../types';
 import { useTheme, colors } from '../theme';
 import tw from 'twrnc';
 import { openWhatsApp } from '../lib/whatsapp';
+import type { LucideIcon } from 'lucide-react-native';
+
+interface SettingItem {
+  icon: LucideIcon;
+  title: string;
+  desc?: string;
+  toggle?: boolean;
+  value?: boolean;
+  onToggle?: (value: boolean) => void;
+  target?: string;
+}
+
+interface SettingSection {
+  title: string;
+  items: SettingItem[];
+}
 
 export function SettingsView({ onViewChange }: { onViewChange: (v: ViewState) => void }) {
   const { isDark, toggleTheme } = useTheme();
@@ -16,7 +32,7 @@ export function SettingsView({ onViewChange }: { onViewChange: (v: ViewState) =>
   const textSecondary = isDark ? colors.dark.textSecondary : colors.light.textSecondary;
   const textMuted = isDark ? colors.dark.textMuted : colors.light.textMuted;
 
-  const sections = [
+  const sections: SettingSection[] = [
     {
       title: 'Account Settings',
       items: [

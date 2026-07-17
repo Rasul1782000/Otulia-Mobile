@@ -4,7 +4,7 @@ import { ArrowLeft, Bell, Heart, Search, X, ChevronDown } from 'lucide-react-nat
 
 import { ViewState, Listing } from '../types';
 import { useTheme, colors } from '../theme';
-import { getHeroImageUrl } from '../lib/cloudinary';
+import { getHeroImageUrl } from '../lib/images';
 import { getListingsByType, getBrandsByType } from '../lib/api';
 import { OptimizedImage } from '../components/OptimizedImage';
 import { FilterPanel, EMPTY_FILTERS, FilterState } from '../components/FilterPanel';
@@ -17,6 +17,14 @@ const CATEGORY_TABS: { label: string; value: Listing['type'] }[] = [
   { label: 'Yachts', value: 'yacht' },
   { label: 'Bikes', value: 'bike' },
 ];
+
+const CATEGORY_IMAGES: Record<Listing['type'], number> = {
+  car: require('../images/assets/Cars Category BG.png'),
+  estate: require('../images/assets/Estates category photo.png'),
+  yacht: require('../images/assets/Yachts Category photo.png'),
+  jet: require('../images/assets/Jet homepage category photo.png'),
+  bike: require('../images/assets/Cars Category BG.png'),
+};
 
 export function ExploreView({ onViewChange, onListingClick, defaultType, onTypeChange }: { onTypeChange: (t: Listing['type']) => void, defaultType: Listing['type'], onViewChange: (v: ViewState) => void, onListingClick: (l: Listing) => void }) {
   const { isDark } = useTheme();
@@ -199,12 +207,10 @@ export function ExploreView({ onViewChange, onListingClick, defaultType, onTypeC
       <ScrollView style={tw`flex-1`} contentContainerStyle={tw`pb-32`}>
         {/* Dynamic Header Image & Nav */}
         <View style={tw`relative h-80 bg-black`}>
-          <OptimizedImage
-            src={getHeroImageUrl(`otulia/category-${activeTab}`)}
-            alt={`${activeTab} category`}
-            priority="high"
-            resizeMode="cover"
+          <Image
+            source={CATEGORY_IMAGES[activeTab]}
             style={[tw`absolute inset-0 w-full h-full`, { opacity: 0.6 }]}
+            resizeMode="cover"
           />
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.35)' }]} />
 

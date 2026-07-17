@@ -1,10 +1,11 @@
-import path from 'path';
-import fs from 'fs';
+// Fix vite.config.ts to load environment variables properly
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import fs from 'fs';
+import path from 'path';
 
-function loadEnvFile(filePath: string): Record<string, string> {
+function loadEnv(filePath: string): Record<string, string> {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     const vars: Record<string, string> = {};
@@ -13,16 +14,18 @@ function loadEnvFile(filePath: string): Record<string, string> {
       if (!trimmed || trimmed.startsWith('#')) continue;
       const eqIdx = trimmed.indexOf('=');
       if (eqIdx === -1) continue;
-      vars[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
+      const key = trimmed.slice(0, eqIdx).trim();
+      const value = trimmed.slice(eqIdx + 1).trim();
+      vars[key] = value;
     }
     return vars;
-  } catch {
+  } catch (e) {
     return {};
   }
 }
 
 export default defineConfig(() => {
-  const env = loadEnvFile(path.resolve(__dirname, '..', '.env'));
+  const env = loadEnv(path.resolve(__dirname, '..', '.env'));
 
   const defines: Record<string, string> = {};
   for (const key in env) {
@@ -37,25 +40,6 @@ export default defineConfig(() => {
     plugins: [
       react(),
       tailwindcss(),
-      {
-        name: 'react-native-web-stubs',
-        enforce: 'pre',
-        resolveId(id) {
-          if (id === 'lucide-react-native/dist/esm/context.mjs') {
-            return path.resolve(__dirname, 'react-native-stubs/lucide-context.mjs');
-          }
-          return null;
-        },
-        transform(code, id) {
-          if (id.includes('NativeSvgRenderableModule') || id.includes('NativeSvgViewModule')) {
-            return {
-              code: `const TurboModuleRegistry = { getEnforcing: () => ({}), get: () => ({}) };\nexport default TurboModuleRegistry;`,
-              map: null,
-            };
-          }
-          return null;
-        },
-      },
     ],
     resolve: {
       alias: [

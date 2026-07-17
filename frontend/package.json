@@ -2,6 +2,7 @@
   "name": "react-frontend",
   "private": true,
   "version": "0.0.0",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -18,6 +19,8 @@
     "@vitejs/plugin-react": "^5.0.4",
     "clsx": "^2.1.1",
     "expo": "^56.0.12",
+    "expo-build-properties": "^56.0.19",
+    "expo-dev-client": "^56.0.20",
     "lucide-react": "^0.546.0",
     "lucide-react-native": "^1.17.0",
     "motion": "^12.23.24",
@@ -26,7 +29,8 @@
     "react-native-svg": "15.15.4",
     "react-native-web": "^0.21.2",
     "tailwind-merge": "^3.6.0",
-    "twrnc": "^4.16.0"
+    "twrnc": "^4.16.0",
+    "react-native": "0.85.3"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",

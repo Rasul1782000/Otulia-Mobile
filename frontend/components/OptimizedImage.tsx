@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { View, Image, ImageStyle, StyleProp, ActivityIndicator, Text } from 'react-native';
 import { enqueueImage } from '../lib/imageQueue';
-import { getOptimizedListingImage, IMAGE_SIZES, getBlurPlaceholderUrl } from '../lib/cloudinary';
+import { getOptimizedListingImage, IMAGE_SIZES, getBlurPlaceholderUrl } from '../lib/images';
 import { colors } from '../theme';
 import tw from 'twrnc';
 
@@ -40,7 +40,7 @@ export function OptimizedImage({
   const viewRef = useRef<View>(null);
   const mountedRef = useRef(true);
 
-  // Apply Cloudinary transformations with mobile-optimized sizes
+  // Resolve image URL with mobile-optimized sizes
   const optimizedSrc = useMemo(() => {
     if (!src) return '';
     let targetW: number;

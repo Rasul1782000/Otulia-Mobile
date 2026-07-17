@@ -1,6 +1,5 @@
 import { Router, Request, Response } from 'express';
 import db from '../db.js';
-import { listImagesInFolder, listAllResources, CloudinaryResource } from '../lib/cloudinary.js';
 import { authenticate } from '../middleware/auth.js';
 
 const router = Router();
@@ -20,15 +19,11 @@ interface ListingRow {
   created_at: string;
 }
 
-function getListingFolder(row: ListingRow): string {
-  return `otulia/listings/l${row.id}`;
-}
-
-function deriveAlt(publicId: string, title?: string): string {
+function deriveAlt(src: string, title?: string): string {
   if (title) return title;
-  const parts = publicId.split('/');
-  const name = parts[parts.length - 1] || publicId;
-  return name.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const parts = src.split('/');
+  const name = parts[parts.length - 1] || src;
+  return name.replace(/\.[a-z]+$/i, '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 const BRAND_PATTERNS: Record<string, string[]> = {
@@ -80,33 +75,14 @@ interface ListingImage {
   loading: 'auto' | 'lazy' | 'eager';
 }
 
-async function fetchCloudinaryImages(folder: string, title?: string): Promise<ListingImage[]> {
-  const resources = await listImagesInFolder(folder, 30);
-  if (resources.length > 0) {
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const baseUrl = `https://res.cloudinary.com/${cloudName}/image/upload`;
-    return resources.map(r => ({
-      src: `${baseUrl}/${r.public_id}`,
-      alt: deriveAlt(r.public_id, title),
-      width: r.width,
-      height: r.height,
-      format: r.format,
-      loading: 'auto' as const,
-    }));
-  }
-  return [];
-}
-
-async function formatListing(row: ListingRow, fetchImages = true) {
+function formatListing(row: ListingRow) {
   let images: ListingImage[] = [];
   const parsed = JSON.parse(row.images);
 
   if (Array.isArray(parsed) && parsed.length > 0) {
     if (typeof parsed[0] === 'string') {
-      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-      const baseUrl = `https://res.cloudinary.com/${cloudName}/image/upload`;
-      images = parsed.map((url: string, i: number) => ({
-        src: url.startsWith('http') ? url : `${baseUrl}/${url}`,
+      images = parsed.map((url: string) => ({
+        src: url,
         alt: deriveAlt(url, row.title),
         width: 0,
         height: 0,
@@ -115,22 +91,6 @@ async function formatListing(row: ListingRow, fetchImages = true) {
       }));
     } else {
       images = parsed;
-    }
-  }
-
-  // Only fetch from Cloudinary if no images in DB (cache-first approach)
-  if (fetchImages && images.length === 0) {
-    const folder = getListingFolder(row);
-    const cloudinaryImages = await fetchCloudinaryImages(folder, row.title);
-    if (cloudinaryImages.length > 0) {
-      images = cloudinaryImages;
-      // Cache fetched images back to DB to avoid future Cloudinary API calls
-      try {
-        db.prepare('UPDATE listings SET images = ? WHERE id = ?')
-          .run(JSON.stringify(cloudinaryImages), row.id);
-      } catch (e) {
-        console.warn('[formatListing] Failed to cache images for listing', row.id);
-      }
     }
   }
 
@@ -150,7 +110,7 @@ async function formatListing(row: ListingRow, fetchImages = true) {
   };
 }
 
-// GET /api/listings — all listings (images fetched from Cloudinary, with optional limit)
+// GET /api/listings — all listings (with optional limit)
 router.get('/', async (req: Request, res: Response) => {
   try {
     const limit = parseInt(req.query.limit as string) || 0;
@@ -162,7 +122,7 @@ router.get('/', async (req: Request, res: Response) => {
     const rows = limit > 0
       ? db.prepare(query).all(limit, offset) as ListingRow[]
       : db.prepare(query).all() as ListingRow[];
-    const listings = await Promise.all(rows.map(row => formatListing(row, true)));
+    const listings = rows.map(row => formatListing(row));
     res.json({ success: true, listings });
   } catch (err: any) {
     console.error('[GET /api/listings]', err);
@@ -182,7 +142,7 @@ router.get('/featured', async (req: Request, res: Response) => {
     const rows = limit > 0
       ? db.prepare(query).all(limit, offset) as ListingRow[]
       : db.prepare(query).all() as ListingRow[];
-    const listings = await Promise.all(rows.map(row => formatListing(row, true)));
+    const listings = rows.map(row => formatListing(row));
     res.json({ success: true, listings });
   } catch (err: any) {
     console.error('[GET /api/listings/featured]', err);
@@ -208,7 +168,7 @@ router.get('/type/:type', async (req: Request, res: Response) => {
     const rows = limit > 0
       ? db.prepare(query).all(type, limit, offset) as ListingRow[]
       : db.prepare(query).all(type) as ListingRow[];
-    const listings = await Promise.all(rows.map(row => formatListing(row, true)));
+    const listings = rows.map(row => formatListing(row));
     res.json({ success: true, listings });
   } catch (err: any) {
     console.error('[GET /api/listings/type/:type]', err);
@@ -234,61 +194,10 @@ router.get('/brands/:type', (req: Request, res: Response) => {
   }
 });
 
-// GET /api/listings/cloudinary/:prefix — raw Cloudinary resources by prefix
-router.get('/cloudinary/:prefix', async (req: Request, res: Response) => {
-  try {
-    const { prefix } = req.params;
-    const fullPrefix = prefix.startsWith('otulia/') ? prefix : `otulia/${prefix}`;
-    const resources = await listAllResources(fullPrefix, 100);
-    res.json({
-      success: true,
-      count: resources.length,
-      images: resources.map(r => ({
-        publicId: r.public_id,
-        url: r.secure_url,
-        format: r.format,
-        width: r.width,
-        height: r.height,
-        folder: r.folder,
-      })),
-    });
-  } catch (err: any) {
-    console.error('[GET /api/listings/cloudinary/:prefix]', err);
-    res.status(500).json({ success: false, message: err.message || 'Failed to fetch Cloudinary resources.' });
-  }
-});
-
-// GET /api/listings/cloudinary — all Cloudinary resources under otulia/
-router.get('/cloudinary', async (_req: Request, res: Response) => {
-  try {
-    const resources = await listAllResources('otulia/', 500);
-    const folderMap: Record<string, any[]> = {};
-    for (const r of resources) {
-      const folder = r.folder || 'root';
-      if (!folderMap[folder]) folderMap[folder] = [];
-      folderMap[folder].push({
-        publicId: r.public_id,
-        url: r.secure_url,
-        format: r.format,
-        width: r.width,
-        height: r.height,
-      });
-    }
-    res.json({ success: true, totalImages: resources.length, folders: folderMap });
-  } catch (err: any) {
-    console.error('[GET /api/listings/cloudinary]', err);
-    res.status(500).json({ success: false, message: err.message || 'Failed to fetch Cloudinary resources.' });
-  }
-});
-
 // GET /api/listings/:id — single listing by id
 router.get('/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    if (id === 'cloudinary') {
-      res.status(404).json({ success: false, message: 'Listing not found.' });
-      return;
-    }
     const numericId = parseInt(id.replace(/^l/, ''), 10);
     if (isNaN(numericId)) {
       res.status(404).json({ success: false, message: 'Listing not found.' });
@@ -299,34 +208,11 @@ router.get('/:id', async (req: Request, res: Response) => {
       res.status(404).json({ success: false, message: 'Listing not found.' });
       return;
     }
-    const listing = await formatListing(row, true);
+    const listing = formatListing(row);
     res.json({ success: true, listing });
   } catch (err: any) {
     console.error('[GET /api/listings/:id]', err);
     res.status(500).json({ success: false, message: err.message || 'Failed to fetch listing.' });
-  }
-});
-
-// POST /api/listings/sync — sync all listing images from Cloudinary to DB
-router.post('/sync', authenticate, async (_req: Request, res: Response) => {
-  try {
-    const rows = db.prepare('SELECT * FROM listings ORDER BY id ASC').all() as ListingRow[];
-    let synced = 0;
-
-    for (const row of rows) {
-      const folder = getListingFolder(row);
-      const cloudinaryImages = await fetchCloudinaryImages(folder, row.title);
-      if (cloudinaryImages.length > 0) {
-        db.prepare('UPDATE listings SET images = ? WHERE id = ?')
-          .run(JSON.stringify(cloudinaryImages), row.id);
-        synced++;
-      }
-    }
-
-    res.json({ success: true, message: `Synced images for ${synced}/${rows.length} listings.` });
-  } catch (err: any) {
-    console.error('[POST /api/listings/sync]', err);
-    res.status(500).json({ success: false, message: err.message || 'Sync failed.' });
   }
 });
 
@@ -345,19 +231,8 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
     ).run(type, title, subtitle || null, price, currency || '€', location, JSON.stringify(images || []), JSON.stringify(specs), isFeatured ? 1 : 0, dealerId || null);
 
     const newId = result.lastInsertRowid as number;
-    const folder = `otulia/listings/l${newId}`;
-
-    const cloudinaryImages = await fetchCloudinaryImages(folder, title);
-    const finalImages = cloudinaryImages.length > 0 ? cloudinaryImages : (images || []);
-
-    if (cloudinaryImages.length > 0) {
-      db.prepare('UPDATE listings SET images = ? WHERE id = ?')
-        .run(JSON.stringify(cloudinaryImages), newId);
-    }
-
     const newListing = db.prepare('SELECT * FROM listings WHERE id = ?').get(newId) as ListingRow;
-    const formatted = await formatListing(newListing, false);
-    formatted.images = finalImages;
+    const formatted = formatListing(newListing);
 
     res.status(201).json({ success: true, listing: formatted });
   } catch (err: any) {

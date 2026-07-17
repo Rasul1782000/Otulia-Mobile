@@ -71,7 +71,7 @@ async function handleResponse<T>(response: Response, url: string): Promise<T> {
       parsed = null;
     }
     const errorMsg = parsed?.message || `HTTP ${response.status}: ${response.statusText}`;
-    console.error(`[API] Request failed:`, { url, status: response.status, message: errorMsg, body: parsed });
+    console.log(`[API] Request failed:`, { url, status: response.status, message: errorMsg, body: parsed });
     throw new Error(errorMsg);
   }
 
@@ -96,11 +96,11 @@ async function get<T>(path: string): Promise<T> {
     return await handleResponse<T>(response, url);
   } catch (err: any) {
     if (err.message === 'Failed to fetch' || err.message?.includes('NetworkError') || err.message?.includes('CORS')) {
-      console.error(`[API] Network/CORS error on GET ${url}:`, err.message);
-      console.error(`[API] Full error object:`, err);
+      console.log(`[API] Network/CORS error on GET ${url}:`, err.message);
+      console.log(`[API] Full error object:`, err);
       throw new Error(`Network error: Cannot reach server at ${BASE_URL}. Is the backend running?`);
     }
-    console.error(`[API] GET ${url} threw:`, err);
+    console.log(`[API] GET ${url} threw:`, err);
     throw err;
   }
 }
@@ -124,11 +124,11 @@ async function post<T>(path: string, body: Record<string, any>): Promise<T> {
     return await handleResponse<T>(response, url);
   } catch (err: any) {
     if (err.message === 'Failed to fetch' || err.message?.includes('NetworkError') || err.message?.includes('CORS')) {
-      console.error(`[API] Network/CORS error on POST ${url}:`, err.message);
-      console.error(`[API] Full error object:`, err);
+      console.log(`[API] Network/CORS error on POST ${url}:`, err.message);
+      console.log(`[API] Full error object:`, err);
       throw new Error(`Network error: Cannot reach server at ${BASE_URL}. Is the backend running?`);
     }
-    console.error(`[API] POST ${url} threw:`, err);
+    console.log(`[API] POST ${url} threw:`, err);
     throw err;
   }
 }
@@ -173,9 +173,54 @@ export async function capturePayPalOrder(body: { orderId: string }): Promise<any
   return post('/api/payment/capture', body);
 }
 
-// ─── Upload (Cloudinary) ─────────────────────────────────
+// ─── Upload ─────────────────────────────────
 export async function uploadImage(body: { image: string; folder?: string }): Promise<any> {
   return post('/api/upload/image', body);
+}
+
+export async function uploadAssetImage(imageUri: string): Promise<{ success: boolean; url: string; publicId: string }> {
+  const formData = new FormData();
+  
+  // Extract file name from device URI path
+  const filename = imageUri.split('/').pop() || 'upload.jpg';
+  
+  // Deduce mimetype from file extension
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : `image/jpeg`;
+  
+  // Append file under the form name "image", casting to any to bypass standard browser FormData types in React Native
+  formData.append('image', {
+    uri: imageUri,
+    name: filename,
+    type,
+  } as any);
+
+  const url = `${BASE_URL}/api/upload/asset`;
+
+  console.log(`[API] POST ${url} (FormData)`);
+  console.log(`[API] Uploading image: ${imageUri} as ${filename} (${type})`);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json',
+        // IMPORTANT: In React Native, DO NOT specify the 'Content-Type': 'multipart/form-data' header.
+        // Doing so overrides the fetch client's ability to append the proper boundary key required for multipart parsing.
+        ...(getAuthToken() ? { 'Authorization': `Bearer ${getAuthToken()}` } : {}),
+      },
+    });
+
+    return await handleResponse<{ success: boolean; url: string; publicId: string }>(response, url);
+  } catch (err: any) {
+    if (err.message === 'Failed to fetch' || err.message?.includes('NetworkError') || err.message?.includes('CORS')) {
+      console.log(`[API] Network error on POST ${url}:`, err.message);
+      throw new Error(`Network error: Cannot reach server at ${BASE_URL}. Is the backend running?`);
+    }
+    console.log(`[API] POST ${url} threw:`, err);
+    throw err;
+  }
 }
 
 // ─── Listings ────────────────────────────────────────────
@@ -209,15 +254,6 @@ export async function createListing(body: Record<string, any>): Promise<any> {
   return post('/api/listings', body);
 }
 
-export async function syncListings(): Promise<{ success: boolean; message: string }> {
-  return post('/api/listings/sync', {});
-}
-
-export async function getCloudinaryResources(prefix?: string): Promise<{ success: boolean; totalImages?: number; folders?: Record<string, any[]>; count?: number; images?: any[] }> {
-  const path = prefix ? `/api/listings/cloudinary/${encodeURIComponent(prefix)}` : '/api/listings/cloudinary';
-  return get(path);
-}
-
 export async function request<T>(path: string): Promise<T> {
   return get<T>(path);
 }
@@ -235,13 +271,12 @@ export const apiClient = {
   createPayPalOrder,
   capturePayPalOrder,
   uploadImage,
+  uploadAssetImage,
   getListings,
   getFeaturedListings,
   getListingsByType,
   getBrandsByType,
   getListingById,
   createListing,
-  syncListings,
-  getCloudinaryResources,
   request,
 };
